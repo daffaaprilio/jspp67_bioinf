@@ -1,0 +1,3 @@
+seed_fasta: "/home/daffa/Work/2025/11-JSPP67/hmm/seed/NP_390565.2.faa"
+prefix: "prpF_homologs_in_plant"
+results_dir: "/home/daffa/Work/2025/11-JSPP67/hmm/hmm_pipeline/prpF"
