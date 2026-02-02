@@ -2,6 +2,8 @@ from pathlib import Path
 import os
 import pandas as pd
 import networkx as nx
+import pickle
+from datetime import datetime
 
 sbi_coex_dir = Path('/home/daffa/Work/2025/11-JSPP67/sbi_coex')
 K = 10
@@ -49,4 +51,22 @@ def build_graph(edges):
 
     return G
 
-def 
+def save_object(pyobj, pklobj):
+    with open(pklobj, 'wb') as f:
+        pickle.dump(pyobj, f)
+    
+    return None
+
+def main(coex_dir, output_dirname):
+    edges = coexdir_to_edgeslist(coex_dir)
+    G = build_graph(edges)
+    
+    os.makedirs(output_dirname, exist_ok=True)
+    
+    save_object(G, f'{output_dirname}/sbi_G_prpF.pkl')
+    save_object(edges, f'{output_dirname}/sbi_edges.pkl')
+
+if __name__ == '__main__':
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    output_dir = f'TAA_cluster-1st_attempt/{timestamp}'
+    main(sbi_coex_dir, output_dir)
