@@ -1,0 +1,18 @@
+# workflows/hmm_homology/Snakefile
+
+from pathfile import Path
+
+configfile: "config.yaml"
+SEED_FASTA = config['seed_fasta']
+
+'''
+A sensitive homology detection strategy:
+1. BLAST finds close homologs.
+2. HMM captures evolutionary patterns from these homologs. Finds genes in sorghum that have conserved amino acids regions as in the homologs.
+'''
+
+
+rule blast_seed_gene:
+    input: SEED_FASTA
+    params:
+        

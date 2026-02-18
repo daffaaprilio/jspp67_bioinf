@@ -1,0 +1,9 @@
+# workflows/hmm_homology/config.yaml
+seed_fasta: "../../data/input/prpF.faa"
+target_fasta: "../../data/reference/GCF_000003195.3_Sorghum_bicolor_NCBIv3_protein.faa"
+blast_db: "../../data/reference/blastdb-sorghum_protein"
+prefix: "prpF"
+results_dir: "../../results/hmm_homology"
+evalue: 1e-5
+coverage: 0.5
+threads: 4
