@@ -4,10 +4,7 @@ import pandas as pd
 import networkx as nx
 import pickle
 from datetime import datetime
-
-sbi_coex_dir = Path('/home/daffa/Work/2025/11-JSPP67/sbi_coex')
-K = 10
-minZ = float(4)
+import argparse
 
 def coexdir_to_edgeslist(coex_dir):
     '''
@@ -57,16 +54,34 @@ def save_object(pyobj, pklobj):
     
     return None
 
-def main(coex_dir, output_dirname):
+def _main(coex_dir, output_dirname):
     edges = coexdir_to_edgeslist(coex_dir)
     G = build_graph(edges)
-    
-    os.makedirs(output_dirname, exist_ok=True)
-    
-    save_object(G, f'{output_dirname}/sbi_G_prpF.pkl')
-    save_object(edges, f'{output_dirname}/sbi_edges.pkl')
+
+    output_path = Path(output_dirname)
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    save_object(G, output_path / 'sbi_G_prpF.pkl')
+    save_object(edges, output_path / 'sbi_edges.pkl')
+
+sbi_coex_dir = Path('/Users/daffa/Documents/Work/jspp67_bioinf/sbi_coex')
+K = 10
+minZ = float(4)
 
 if __name__ == '__main__':
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    output_dir = f'TAA_cluster-1st_attempt/{timestamp}'
-    main(sbi_coex_dir, output_dir)
+    default_output = Path(f'TAA_cluster-1st_attempt/{timestamp}')
+
+    parser = argparse.ArgumentParser(description='Create coexpression network')
+    parser.add_argument('--coex-dir', '-c', type=Path, default=sbi_coex_dir,
+                        help='Path to ATTED-II style coexpression directory')
+    parser.add_argument('--output-dir', '-o', type=Path, default=default_output,
+                        help=f'Output directory for graph and edges pickle (default folder name is {default_output})')
+    parser.add_argument('--gene-no', '-k', type=int, default=10,
+                        help='From each file in the coex dir, filter up to K number of genes to be included in the network')
+    parser.add_argument('--z-score', '-z', type=float, default=4,
+                        help='From each file in the coex dir, filter only genes coexpressed with min z score')
+    args = parser.parse_args()
+
+    _main(args.coex_dir, args.output_dir)
+    # _main(sbi_coex_dir, output_dir)
