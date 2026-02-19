@@ -11,8 +11,8 @@ A sensitive homology detection strategy:
 2. HMM captures evolutionary patterns from these homologs. Finds genes in sorghum that have conserved amino acids regions as in the homologs.
 '''
 
-
 rule blast_seed_gene:
     input: SEED_FASTA
     params:
+        blastdb = 
         
