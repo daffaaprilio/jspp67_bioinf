@@ -1,0 +1,15 @@
+# Root config — values are passed to submodules.
+# Paths are relative to the repo root (where the root Snakefile lives).
+
+## to-do: look for methods to pass values to module (in this case hmm_homology module)
+## currently, module's config is in use, not this one
+hmm_homology:
+  seed_fasta:     "data/input/prpF.faa"
+  target_fasta:   "data/reference/GCF_000003195.3_Sorghum_bicolor_NCBIv3_protein.faa"
+  gene2accession: "data/reference/gene2accession.gz"
+  prefix:         "prpF"
+  results_dir:    "results/hmm_homology"
+  evalue:         1e-5
+  coverage:       0.5           # reserved for future BLAST qcovs filtering
+  taxids:         33090         # Viridiplantae NCBI taxon ID
+  max_target_seqs: 10

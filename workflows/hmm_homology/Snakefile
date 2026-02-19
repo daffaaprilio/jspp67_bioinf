@@ -1,18 +1,123 @@
 # workflows/hmm_homology/Snakefile
 
-from pathfile import Path
+from pathlib import Path
 
 configfile: "config.yaml"
-SEED_FASTA = config['seed_fasta']
+
+SEED_FASTA      = config['seed_fasta']
+TARGET_FASTA    = config['target_fasta']
+PREFIX          = config['prefix']
+RESULTS_DIR     = config['results_dir']
+
+BLAST_HITS      = f"{RESULTS_DIR}/{PREFIX}-01-blast_hits.txt"
+ACCESSIONS      = f"{RESULTS_DIR}/{PREFIX}-02-accessions.txt"
+SEQS_FAA        = f"{RESULTS_DIR}/{PREFIX}-03.faa"
+ALIGNED_FAA     = f"{RESULTS_DIR}/{PREFIX}-04.aln.faa"
+HMM_PROFILE     = f"{RESULTS_DIR}/{PREFIX}-05.hmm"
+PRESSED_HMM     = expand("{db}.{suffix}", db=HMM_PROFILE, suffix=["h3f", "h3i", "h3m", "h3p"])
+HMM_SEARCH_OUT  = f"{RESULTS_DIR}/{PREFIX}-06-results.tbl"
 
 '''
 A sensitive homology detection strategy:
-1. BLAST finds close homologs.
-2. HMM captures evolutionary patterns from these homologs. Finds genes in sorghum that have conserved amino acids regions as in the homologs.
+1. BLAST finds close homologs (remote search against NCBI nr, Viridiplantae only).
+2. HMM captures evolutionary patterns from these homologs and finds conserved
+   regions in the Sorghum proteome.
+3. HMM hit protein accessions are converted to Sorghum gene IDs via gene2accession.
 '''
+
+
+rule all:
+    input: HMM_SEARCH_OUT
+
 
 rule blast_seed_gene:
     input: SEED_FASTA
     params:
-        blastdb = 
+        db             = "nr",
+        entrez_query   = "txid{taxids}[Organism]".format(taxids=config['taxids']),
+        outfmt         = "6 qacc sacc pident length evalue bitscore staxids",
+        max_target_seqs = config['max_target_seqs']
+    output: BLAST_HITS
+    shell:
+        """
+        blastp \
+            -remote \
+            -db {params.db} \
+            -query {input} \
+            -outfmt "{params.outfmt}" \
+            -entrez_query "{params.entrez_query}" \
+            -max_target_seqs {params.max_target_seqs} \
+            > {output}
+        """
+
+
+rule obtain_accessions:
+    input: BLAST_HITS
+    output: ACCESSIONS
+    shell:
+        """
+        cut -f2 {input} | sort -u > {output}
+        """
+
+
+rule download_sequences:
+    input: ACCESSIONS
+    output: SEQS_FAA
+    params:
+        db   = "protein",
+        seed = SEED_FASTA,
+    shell:
+        """
+        # Start with a copy of the seed so it is included in the alignment
+        cp {params.seed} {output}
+
+        while read acc; do
+            if [ -n "$acc" ]; then
+                efetch -db {params.db} -id "$acc" -format fasta >> {output}
+                sleep 0.1
+            fi
+        done < {input}
+        """
+
+
+rule align_filtered_sequences:
+    input: SEQS_FAA
+    output: ALIGNED_FAA
+    shell:
+        """
+        mafft --auto {input} > {output}
+        """
+
+
+rule build_hmm_profile:
+    input: ALIGNED_FAA
+    output: HMM_PROFILE
+    shell:
+        """
+        hmmbuild {output} {input}
+        """
+
+
+rule hmmpress:
+    input: HMM_PROFILE
+    output: PRESSED_HMM
+    shell:
+        """
+        hmmpress {input}
+        """
+
+
+rule hmmsearch:
+    input:
+        hmm     = HMM_PROFILE,
+        target  = TARGET_FASTA,
+        pressed = PRESSED_HMM,
+    output: HMM_SEARCH_OUT
+    shell:
+        """
+        hmmsearch \
+            --tblout {output} \
+            {input.hmm} {input.target}
+        """
+ 
         

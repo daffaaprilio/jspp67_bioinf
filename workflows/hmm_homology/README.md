@@ -7,5 +7,5 @@ Installed in a conda environment `sbi`:
 # ensure mamba is available
 conda install -n base -c conda-forge mamba -y
 # install required bioinformatics package
-mamba install -n sbi -c conda-forge -c bioconda snakemake mafft blast hmmer
+mamba install -n sbi -c conda-forge -c bioconda snakemake mafft blast hmmer entrez-direct
 ```
