@@ -1,13 +1,11 @@
 # workflows/hmm_homology/Snakefile
 
-from pathlib import Path
-
 configfile: "config.yaml"
 
 SEED_FASTA      = config['seed_fasta']
 TARGET_FASTA    = config['target_fasta']
 PREFIX          = config['prefix']
-RESULTS_DIR     = config['results_dir']
+RESULTS_DIR     = f"{config['results_dir']}/{PREFIX}"
 
 BLAST_HITS      = f"{RESULTS_DIR}/{PREFIX}-01-blast_hits.txt"
 ACCESSIONS      = f"{RESULTS_DIR}/{PREFIX}-02-accessions.txt"
@@ -72,9 +70,6 @@ rule download_sequences:
         seed = SEED_FASTA,
     shell:
         """
-        # Start with a copy of the seed so it is included in the alignment
-        cp {params.seed} {output}
-
         while read acc; do
             if [ -n "$acc" ]; then
                 efetch -db {params.db} -id "$acc" -format fasta >> {output}
