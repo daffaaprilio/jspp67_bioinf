@@ -20,12 +20,14 @@ def parse_hmmsearch_tblout(tblout_path):
     Column 0 is the target (protein) accession.
     """
     hit_accessions = []
+    hit_evalue = []
     with open(tblout_path, 'r') as f:
         for line in f:
             if line.startswith('#') or not line.strip():
                 continue
             hit_accessions.append(line.split()[0])
-    return hit_accessions
+            hit_evalue.append(line.split()[4])
+    return hit_accessions, hit_evalue
 
 
 def load_gene2accession(gene2acc_path):
@@ -85,7 +87,8 @@ def convert_protein_to_gene_ids(hit_accessions, protein_to_gene):
 
 def save_gene_ids(gene_ids, output_path):
     """
-    Save unique gene IDs to output file (one per line).
+    Save in a tab separated format:
+    col1: unique gene IDs. col2: 
     """
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     with open(output_path, 'w') as f:

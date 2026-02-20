@@ -1,5 +1,7 @@
 # workflows/gene_network/Snakefile
 
+configfile: "../../config.yaml"
+
 PREFIX = config['prefix']
 
 '''
