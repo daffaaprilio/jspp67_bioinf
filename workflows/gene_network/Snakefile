@@ -1,0 +1,43 @@
+# workflows/gene_network/Snakefile
+
+PREFIX = config['prefix']
+
+'''
+0. Download required files (i.e., gene2accesion) if not exist
+1. Convert to standard gene ID
+    a. Parse the HMM Homology search result
+    b. Obtain the homologous protein sequence name
+    c. Find the matching gene ID for the protein sequence(s)
+2. Construct graph from gene IDs
+3. Output (pickle object of Graph) can be visualized via Cytoscape (through Jupyter Notebook)
+'''
+
+rule all:
+    input: f'../../results/gene_network/{PREFIX}/{PREFIX}-01-homologous_geneID.txt'
+
+rule obtain_gene2accesion:
+    params:
+        reference_dir   = '../../data/reference'
+    output: 
+        '../../data/reference/sorghum_gene2accession'
+    shell:
+        '''
+        # download from NCBI FTP
+        wget https://ftp.ncbi.nlm.nih.gov/gene/DATA/gene2accesion.gz -P {params.reference_dir}
+        gunzip -d {params.reference_dir}/gene2accesion.gz
+        
+        # filter to only include sorghum conversion
+        cat {params.reference_dir}/gene2accesion | awk -F'\t' '$1 == 4558' > {output}
+        '''
+
+rule convert_id:
+    input:
+        script          = 'scripts/convert_id.py',
+        gene2accesion   = '../../data/reference/sorghum_gene2accession',
+        hmm_result      = f'../../results/hmm_homology/{PREFIX}/{PREFIX}-06-results.tbl'
+    output:
+        f'../../results/gene_network/{PREFIX}/{PREFIX}-01-homologous_geneID.txt'
+    shell:
+        '''
+        python {input.script} -m {input.hmm_result} -r {input.gene2accesion} -o {output}
+        '''

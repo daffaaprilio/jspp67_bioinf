@@ -115,6 +115,7 @@ rule hmmsearch:
     shell:
         """
         hmmsearch \
+            --max \
             --tblout {output} \
             {input.hmm} {input.target}
         """

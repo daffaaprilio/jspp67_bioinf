@@ -1,13 +1,13 @@
 # workflows/hmm_homology/config.yaml
-seed_fasta:    "../../data/input/prpF.faa"
-prefix:        "prpF"
+seed_fasta:    "../../data/input/adi1.faa"
+prefix:        "adi1"
 
 target_fasta:  "../../data/reference/GCF_000003195.3_Sorghum_bicolor_NCBIv3_protein.faa"
 gene2accession: "../../data/reference/gene2accession.gz"
 
 results_dir:   "../../results/hmm_homology"
 coverage:      0.5          # reserved for future BLAST qcovs filtering
-taxids:        3398        # 33090 viridiplantae(or 3398 for Magnoliopsida/flowering plants)
+taxids:        33090        # 33090 viridiplantae(or 3398 for Magnoliopsida/flowering plants)
 max_target_seqs: 100         # Increased to capture more diverse hits
 evalue:        1e-10        # E-value threshold to filter weak hits (BLAST hits)
 qcovs:         50           # Minimum query coverage percentage
