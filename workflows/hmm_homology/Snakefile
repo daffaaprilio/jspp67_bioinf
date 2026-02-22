@@ -31,12 +31,10 @@ rule all:
 rule blast_seed_gene:
     input: SEED_FASTA
     params:
-        db             = "nr",
+        db             = config['blastdb'],
         entrez_query   = "txid{taxids}[Organism]".format(taxids=config['taxids']),
         outfmt         = "6 qacc sacc pident length qcovs evalue bitscore staxids",
-        max_target_seqs = config['max_target_seqs'],
-        evalue         = config['evalue'],
-        qcovs          = config['qcovs']
+        max_target_seqs = config['max_target_seqs']
     output: BLAST_HITS
     shell:
         """
@@ -46,8 +44,6 @@ rule blast_seed_gene:
             -query {input} \
             -outfmt "{params.outfmt}" \
             -entrez_query "{params.entrez_query}" \
-            -evalue {params.evalue} \
-            -qcov_hsp_perc {params.qcovs} \
             -max_target_seqs {params.max_target_seqs} \
             > {output}
         """

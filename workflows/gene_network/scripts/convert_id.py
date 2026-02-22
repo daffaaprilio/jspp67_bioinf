@@ -122,7 +122,7 @@ def main():
     
     # Step 1: Parse hmmsearch results
     print(f"Parsing hmmsearch results from {args.hmm_result}")
-    hit_accessions = parse_hmmsearch_tblout(args.hmm_result)
+    hit_accessions, hit_evalue = parse_hmmsearch_tblout(args.hmm_result)
     print(f"Found {len(hit_accessions)} hmmsearch hit(s)")
     
     if not hit_accessions:
