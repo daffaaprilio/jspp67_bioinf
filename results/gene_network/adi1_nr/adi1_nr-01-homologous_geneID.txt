@@ -1,51 +1,66 @@
-8054630
-8055738
-8056026
-8056187
-8056416
-8056791
-8057845
-8058490
-8059990
-8060782
-8061004
-8061044
-8061781
-8063209
-8063322
-8065029
-8065447
-8066163
-8066950
-8067335
-8067495
-8070426
-8071161
-8071256
-8071257
-8071855
-8072195
-8073379
-8074970
-8075447
-8076274
-8077667
-8077919
-8078134
-8078517
-8078635
-8078836
-8079882
-8080220
-8082139
-8082959
-8084706
-8085099
-110431029
-110434028
-110435026
-110436923
-110437214
-110437215
-110437238
-110437322
+protein_accession	gene_id	evalue	description
+XP_002453540.1	8082959	8.6e-73	beta-galactosidase 4 isoform X2 [Sorghum bicolor]
+XP_021314143.1	8082959	9e-70	beta-galactosidase 4 isoform X1 [Sorghum bicolor]
+XP_002455483.1	8078134	4.8e-68	uncharacterized protein LOC8078134 isoform X2 [Sorghum bicolor]
+XP_021311177.1	8078134	1.1e-65	uncharacterized protein LOC8078134 isoform X1 [Sorghum bicolor]
+XP_002437187.1	8065029	9.1e-65	beta-galactosidase 9 [Sorghum bicolor]
+XP_002455836.2	8078635	2.8e-31	beta-galactosidase 2 isoform X1 [Sorghum bicolor]
+XP_021312900.1	8078635	3.3e-28	beta-galactosidase 2 isoform X2 [Sorghum bicolor]
+XP_021305213.1	110431029	4.7e-24	putative 4-hydroxy-4-methyl-2-oxoglutarate aldolase 2 [Sorghum bicolor]
+XP_021305214.1	110431029	4.7e-24	putative 4-hydroxy-4-methyl-2-oxoglutarate aldolase 2 [Sorghum bicolor]
+XP_021304124.1	8067495	8e-24	putative 4-hydroxy-4-methyl-2-oxoglutarate aldolase 2 [Sorghum bicolor]
+XP_021304125.1	8067495	8e-24	putative 4-hydroxy-4-methyl-2-oxoglutarate aldolase 2 [Sorghum bicolor]
+XP_002457348.1	8060782	3.4e-23	putative 4-hydroxy-4-methyl-2-oxoglutarate aldolase 2 [Sorghum bicolor]
+XP_002465807.1	8082139	3.6e-21	beta-galactosidase 5 [Sorghum bicolor]
+XP_002456725.1	8061004	5.2e-19	beta-galactosidase 3 [Sorghum bicolor]
+XP_002465536.1	8078836	2.6e-15	beta-galactosidase 6 [Sorghum bicolor]
+XP_002442888.1	8076274	2e-13	beta-galactosidase 15 [Sorghum bicolor]
+XP_002440781.1	8055738	8.8e-10	probable serine/threonine-protein kinase PBL23 [Sorghum bicolor]
+XP_021303839.1	8085099	7.7e-08	probable serine/threonine-protein kinase PBL7, partial [Sorghum bicolor]
+XP_002445734.2	8057845	0.00015	beta-galactosidase 11 [Sorghum bicolor]
+XP_002465081.1	8063209	0.00049	uncharacterized protein LOC8063209 [Sorghum bicolor]
+XP_002457961.1	8074970	0.001	beta-galactosidase 1 [Sorghum bicolor]
+XP_021302950.1	8058490	0.0038	beta-galactosidase 7 [Sorghum bicolor]
+XP_021321454.1	8071161	0.063	probable LRR receptor-like serine/threonine-protein kinase At1g56130 [Sorghum bicolor]
+XP_002457619.1	8054630	0.073	uncharacterized protein LOC8054630 [Sorghum bicolor]
+XP_021308684.1	8063322	0.092	beta-galactosidase 12 [Sorghum bicolor]
+XP_002441899.1	8079882	0.12	wall-associated receptor kinase 3 [Sorghum bicolor]
+XP_002441230.1	8061781	0.42	probable serine/threonine-protein kinase PBL25 [Sorghum bicolor]
+XP_002439692.1	8077919	0.53	serine/threonine-protein kinase PBL27 [Sorghum bicolor]
+XP_002439693.1	8077667	0.55	serine/threonine-protein kinase PBL27 [Sorghum bicolor]
+XP_002454747.1	8056416	0.57	wall-associated receptor kinase 2 [Sorghum bicolor]
+XP_021315980.1	110435026	0.68	exosome complex component RRP45A-like isoform X3 [Sorghum bicolor]
+XP_021317896.1	8080220	0.74	calmodulin-binding receptor-like cytoplasmic kinase 2 isoform X2 [Sorghum bicolor]
+XP_002463606.1	8080220	0.75	calmodulin-binding receptor-like cytoplasmic kinase 2 isoform X1 [Sorghum bicolor]
+XP_021315978.1	110435026	0.87	exosome complex component RRP45A-like isoform X2 [Sorghum bicolor]
+XP_021315979.1	110435026	0.87	exosome complex component RRP45A-like isoform X2 [Sorghum bicolor]
+XP_002463358.1	8078517	0.87	probable serine/threonine-protein kinase PBL7 [Sorghum bicolor]
+XP_021313219.1	110434028	0.92	uncharacterized protein LOC110434028 [Sorghum bicolor]
+XP_002446325.1	8071855	1.1	serine/threonine-protein kinase PBS1 [Sorghum bicolor]
+XP_021315976.1	110435026	1.2	exosome complex component RRP45A-like isoform X1 [Sorghum bicolor]
+XP_021315977.1	110435026	1.2	exosome complex component RRP45A-like isoform X1 [Sorghum bicolor]
+XP_002439208.1	8071257	2.2	probable serine/threonine-protein kinase PBL25 [Sorghum bicolor]
+XP_002463974.2	8059990	2.9	probable protein kinase At2g41970 [Sorghum bicolor]
+XP_021313982.1	8084706	3	receptor-like serine/threonine-protein kinase ALE2 isoform X3 [Sorghum bicolor]
+XP_002448208.1	8056026	3	nicotinamidase 2 [Sorghum bicolor]
+XP_002462302.1	8056187	3.3	probable serine/threonine-protein kinase PBL28 [Sorghum bicolor]
+XP_021308157.1	8056187	3.3	probable serine/threonine-protein kinase PBL28 [Sorghum bicolor]
+XP_021308158.1	8056187	3.3	probable serine/threonine-protein kinase PBL28 [Sorghum bicolor]
+XP_021313981.1	8084706	3.3	receptor-like serine/threonine-protein kinase ALE2 isoform X2 [Sorghum bicolor]
+XP_021313980.1	8084706	3.4	receptor-like serine/threonine-protein kinase ALE2 isoform X1 [Sorghum bicolor]
+XP_002440468.1	8067335	3.6	cysteine-rich repeat secretory protein 55 [Sorghum bicolor]
+XP_002444076.2	8072195	4.2	beta-galactosidase 6 [Sorghum bicolor]
+XP_021321252.1	110437214	4.2	beta-galactosidase 6-like [Sorghum bicolor]
+XP_021321253.1	110437215	4.2	beta-galactosidase 6-like [Sorghum bicolor]
+XP_002454196.2	8066163	4.4	wall-associated receptor kinase 5 [Sorghum bicolor]
+XP_002442790.2	8066950	4.6	uncharacterized protein LOC8066950 [Sorghum bicolor]
+XP_021321292.1	110437238	5	uncharacterized protein LOC110437238 [Sorghum bicolor]
+XP_021305126.1	8065447	5.6	uncharacterized protein LOC8065447 [Sorghum bicolor]
+XP_002452162.1	8056791	6.5	serine/threonine-protein kinase PBS1 [Sorghum bicolor]
+XP_021302435.1	8071256	6.5	L-type lectin-domain containing receptor kinase VIII.2 [Sorghum bicolor]
+XP_021319678.1	8073379	6.8	probable transcription repressor OFP9 [Sorghum bicolor]
+XP_002455277.1	8070426	6.9	putative E3 ubiquitin-protein ligase SINA-like 9 [Sorghum bicolor]
+XP_021321411.1	110437322	8.4	uncharacterized protein LOC110437322 [Sorghum bicolor]
+XP_002455751.1	8075447	8.7	uncharacterized protein LOC8075447 [Sorghum bicolor]
+XP_021320311.1	110436923	9	uncharacterized protein LOC110436923 isoform X2 [Sorghum bicolor]
+XP_002452245.1	8061044	9.9	probable serine/threonine-protein kinase At1g01540 [Sorghum bicolor]

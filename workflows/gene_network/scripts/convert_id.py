@@ -19,16 +19,19 @@ def parse_hmmsearch_tblout(tblout_path):
     tblout format: first 3 lines are comments (#), last 10 lines are footer.
     Column 0 is the target (protein) accession.
     """
-    hit_accessions = []
-    hit_evalue = []
+    rows = []
     with open(tblout_path, 'r') as f:
         for line in f:
             if line.startswith('#') or not line.strip():
                 continue
-            hit_accessions.append(line.split()[0])
-            hit_evalue.append(line.split()[4])
-    return hit_accessions, hit_evalue
-
+            cols = line.split()
+            rows.append({
+                'protein_accession': cols[0],
+                'evalue': cols[4],
+                'description': ' '.join(cols[18:])
+            })
+    
+    return pd.DataFrame(rows, columns=['protein_accession', 'evalue', 'description'])
 
 def load_gene2accession(gene2acc_path):
     """
@@ -66,35 +69,29 @@ def load_gene2accession(gene2acc_path):
     return protein_to_gene
 
 
-def convert_protein_to_gene_ids(hit_accessions, protein_to_gene):
+def convert_protein_to_gene_ids(hits_df, protein_to_gene):
     """
     Convert list of protein accessions to gene IDs using the mapping.
     Returns list of gene IDs and list of unmapped accessions.
+    Convert dataframe of hits (columns: protein accession, hit evalue, hit description) 
+    into a more complete dataframe (namely gene IDs, protein accession, hit evalue, hit description)
     """
-    gene_ids = []
-    unmapped = []
+    # map the protein_accession column
+    hits_df['gene_id'] = hits_df['protein_accession'].map(protein_to_gene)
+    # reorder columns
+    hits_df = hits_df[['protein_accession', 'gene_id', 'evalue', 'description']]
+    mapped   = hits_df[hits_df['gene_id'].notna()].copy()
+    unmapped = hits_df[hits_df['gene_id'].isna()].copy()
     
-    for protein_id in hit_accessions:
-        # Try exact match first, then version-stripped
-        gene_id = protein_to_gene.get(protein_id) or protein_to_gene.get(protein_id.split('.')[0])
-        if gene_id:
-            gene_ids.append(gene_id)
-        else:
-            unmapped.append(protein_id)
-    
-    return gene_ids, unmapped
+    return mapped, unmapped
 
 
-def save_gene_ids(gene_ids, output_path):
+def save_gene_ids(mapped, output_path):
     """
-    Save in a tab separated format:
-    col1: unique gene IDs. col2: 
+    Save the converted hits dataframe in a tab separated format
     """
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-    with open(output_path, 'w') as f:
-        for gene_id in sorted(set(gene_ids)):
-            f.write(f"{gene_id}\n")
-
+    mapped.to_csv(output_path, sep='\t', header=True, index=False)
 
 def main():
     parser = argparse.ArgumentParser(
@@ -122,10 +119,10 @@ def main():
     
     # Step 1: Parse hmmsearch results
     print(f"Parsing hmmsearch results from {args.hmm_result}")
-    hit_accessions, hit_evalue = parse_hmmsearch_tblout(args.hmm_result)
-    print(f"Found {len(hit_accessions)} hmmsearch hit(s)")
+    hits_df = parse_hmmsearch_tblout(args.hmm_result)
+    print(f"Found {len(hits_df)} hmmsearch hit(s)")
     
-    if not hit_accessions:
+    if hits_df.empty:
         print("No hits found. Creating empty output file.")
         Path(args.output).write_text("")
         return
@@ -136,16 +133,16 @@ def main():
     
     # Step 3: Convert protein IDs to gene IDs
     print("Converting protein IDs to gene IDs")
-    gene_ids, unmapped = convert_protein_to_gene_ids(hit_accessions, protein_to_gene)
+    mapped, unmapped = convert_protein_to_gene_ids(hits_df, protein_to_gene)
     
-    print(f"\nConverted {len(gene_ids)}/{len(hit_accessions)} protein IDs to gene IDs")
-    if unmapped:
+    print(f"\nConverted {len(mapped)}/{len(hits_df)} protein IDs to gene IDs")
+    if unmapped.empty:
         print(f"Unmapped protein IDs: {len(unmapped)}")
         print(f"Examples of unmapped: {unmapped[:10]}")
     
     # Step 4: Save output
-    save_gene_ids(gene_ids, args.output)
-    print(f"Wrote {len(set(gene_ids))} unique gene IDs to {args.output}")
+    save_gene_ids(mapped, args.output)
+    print(f"Wrote {len(set(mapped['gene_id']))} unique gene IDs to {args.output}")
 
 
 if __name__ == '__main__':
