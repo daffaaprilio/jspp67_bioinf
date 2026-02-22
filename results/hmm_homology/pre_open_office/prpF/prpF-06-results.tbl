@@ -1,0 +1,29 @@
+#                                                               --- full sequence ---- --- best 1 domain ---- --- domain number estimation ----
+# target name        accession  query name           accession    E-value  score  bias   E-value  score  bias   exp reg clu  ov env dom rep inc description of target
+#------------------- ---------- -------------------- ---------- --------- ------ ----- --------- ------ -----   --- --- --- --- --- --- --- --- ---------------------
+XP_021305213.1       -          prpF-04.aln          -            1.1e-45  156.4   0.2   1.3e-45  156.2   0.2   1.0   1   0   0   1   1   1   1 putative 4-hydroxy-4-methyl-2-oxoglutarate aldolase 2 [Sorghum bicolor]
+XP_021305214.1       -          prpF-04.aln          -            1.1e-45  156.4   0.2   1.3e-45  156.2   0.2   1.0   1   0   0   1   1   1   1 putative 4-hydroxy-4-methyl-2-oxoglutarate aldolase 2 [Sorghum bicolor]
+XP_021304124.1       -          prpF-04.aln          -            1.5e-45  156.0   0.1   1.8e-45  155.7   0.1   1.0   1   0   0   1   1   1   1 putative 4-hydroxy-4-methyl-2-oxoglutarate aldolase 2 [Sorghum bicolor]
+XP_021304125.1       -          prpF-04.aln          -            1.5e-45  156.0   0.1   1.8e-45  155.7   0.1   1.0   1   0   0   1   1   1   1 putative 4-hydroxy-4-methyl-2-oxoglutarate aldolase 2 [Sorghum bicolor]
+XP_002457348.1       -          prpF-04.aln          -            9.4e-43  146.7   0.3     1e-42  146.6   0.3   1.0   1   0   0   1   1   1   1 putative 4-hydroxy-4-methyl-2-oxoglutarate aldolase 2 [Sorghum bicolor]
+XP_021304041.1       -          prpF-04.aln          -            7.8e-16   57.5   0.0   6.2e-14   51.2   0.0   2.2   2   0   0   2   2   2   2 pyruvate, phosphate dikinase 1, chloroplastic [Sorghum bicolor]
+XP_021306988.1       -          prpF-04.aln          -            6.6e-15   54.4   0.0   2.3e-14   52.6   0.0   1.8   2   0   0   2   2   2   1 pyruvate, phosphate dikinase 2 isoform X2 [Sorghum bicolor]
+XP_021306989.1       -          prpF-04.aln          -            6.6e-15   54.4   0.0   2.3e-14   52.6   0.0   1.8   2   0   0   2   2   2   1 pyruvate, phosphate dikinase 2 isoform X2 [Sorghum bicolor]
+XP_002465076.2       -          prpF-04.aln          -            1.1e-14   53.7   0.0   3.3e-14   52.1   0.0   1.7   2   0   0   2   2   2   1 pyruvate, phosphate dikinase 2 isoform X1 [Sorghum bicolor]
+XP_021315601.1       -          prpF-04.aln          -             0.0019   16.5   0.0    0.0027   15.9   0.0   1.1   1   0   0   1   1   1   1 phosphoglucan, water dikinase, chloroplastic isoform X3 [Sorghum bicolor]
+XP_002453659.1       -          prpF-04.aln          -             0.0021   16.3   0.0     0.003   15.8   0.0   1.1   1   0   0   1   1   1   1 phosphoglucan, water dikinase, chloroplastic isoform X2 [Sorghum bicolor]
+XP_021315600.1       -          prpF-04.aln          -             0.0021   16.3   0.0     0.003   15.8   0.0   1.1   1   0   0   1   1   1   1 phosphoglucan, water dikinase, chloroplastic isoform X1 [Sorghum bicolor]
+XP_002464070.1       -          prpF-04.aln          -               0.15   10.1   5.7      0.22    9.6   5.7   1.2   1   0   0   1   1   1   0 uncharacterized protein LOC8054163 [Sorghum bicolor]
+XP_021304642.1       -          prpF-04.aln          -                1.5    6.9   3.1      0.83    7.7   0.0   1.8   2   0   0   2   2   2   0 alpha-glucan water dikinase, chloroplastic isoform X2 [Sorghum bicolor]
+XP_002438419.1       -          prpF-04.aln          -                1.5    6.9   3.1      0.83    7.7   0.0   1.8   2   0   0   2   2   2   0 alpha-glucan water dikinase, chloroplastic isoform X1 [Sorghum bicolor]
+XP_021304641.1       -          prpF-04.aln          -                1.5    6.9   3.1      0.83    7.7   0.0   1.8   2   0   0   2   2   2   0 alpha-glucan water dikinase, chloroplastic isoform X1 [Sorghum bicolor]
+#
+# Program:         hmmsearch
+# Version:         3.4 (Aug 2023)
+# Pipeline mode:   SEARCH
+# Query file:      ../../results/hmm_homology/prpF/prpF-05.hmm
+# Target file:     ../../data/reference/GCF_000003195.3_Sorghum_bicolor_NCBIv3_protein.faa
+# Option settings: hmmsearch --tblout ../../results/hmm_homology/prpF/prpF-06-results.tbl ../../results/hmm_homology/prpF/prpF-05.hmm ../../data/reference/GCF_000003195.3_Sorghum_bicolor_NCBIv3_protein.faa 
+# Current dir:     /Users/daffaaprilio/Documents/Work/jspp67_bioinf/workflows/hmm_homology
+# Date:            Fri Feb 20 10:20:44 2026
+# [ok]
