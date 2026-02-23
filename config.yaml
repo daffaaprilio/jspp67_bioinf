@@ -1,6 +1,6 @@
 # workflows/hmm_homology/config.yaml
-seed_fasta:    "../../data/input/adi1.faa"
-prefix:        "adi1_nr"
+seed_fasta:    "../../data/input/prpF.faa"
+prefix:        "prpF_nr"
 
 target_fasta:  "../../data/reference/GCF_000003195.3_Sorghum_bicolor_NCBIv3_protein.faa"
 gene2accession: "../../data/reference/gene2accession.gz"
