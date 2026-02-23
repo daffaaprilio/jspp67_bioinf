@@ -2,69 +2,67 @@
 
 configfile: "../../config.yaml"
 
-SEED_FASTA      = config['seed_fasta']
-TARGET_FASTA    = config['target_fasta']
-PREFIX          = config['prefix']
-RESULTS_DIR     = f"{config['results_dir']}/{PREFIX}"
-
-BLAST_ARCHIVE   = f"{RESULTS_DIR}/{PREFIX}-00-blast_archive.txt"
-BLAST_HITS_RAW  = f"{RESULTS_DIR}/{PREFIX}-00-raw_blast_hits.txt"
-BLAST_HITS      = f"{RESULTS_DIR}/{PREFIX}-01-blast_hits.txt"
-ACCESSIONS      = f"{RESULTS_DIR}/{PREFIX}-02-accessions.txt"
-SEQS_FAA        = f"{RESULTS_DIR}/{PREFIX}-03.faa"
-ALIGNED_FAA     = f"{RESULTS_DIR}/{PREFIX}-04.aln.faa"
-HMM_PROFILE     = f"{RESULTS_DIR}/{PREFIX}-05.hmm"
-PRESSED_HMM     = expand("{db}.{suffix}", db=HMM_PROFILE, suffix=["h3f", "h3i", "h3m", "h3p"])
-HMM_SEARCH_OUT  = f"{RESULTS_DIR}/{PREFIX}-06-results.tbl"
+SEEDS        = config['seeds']       # {name: fasta_path}
+DBS          = config['dbs']         # {name: blast_db_string}
+TARGET_FASTA = config['target_fasta']
+RESULTS_DIR  = config['results_dir']
 
 '''
 A sensitive homology detection strategy:
-1. BLAST finds close homologs (remote search against NCBI nr, Viridiplantae only).
+1. BLAST finds close homologs (remote search against NCBI nr/refseq, Viridiplantae only).
 2. HMM captures evolutionary patterns from these homologs and finds conserved
    regions in the Sorghum proteome.
 3. HMM hit protein accessions are converted to Sorghum gene IDs via gene2accession.
+Each (seed x db) combination runs independently in its own subdirectory.
 '''
 
 
 rule all:
-    input: HMM_SEARCH_OUT
+    input:
+        expand(
+            f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-06-results.tbl",
+            seed=SEEDS.keys(),
+            db=DBS.keys(),
+        )
 
 
 rule blast_seed_gene:
-    input: SEED_FASTA
+    input:
+        fasta = lambda wc: SEEDS[wc.seed]
     params:
-        db              = config['blastdb'],
+        db              = lambda wc: DBS[wc.db],
         entrez_query    = "txid{taxids}[Organism]".format(taxids=config['taxids']),
         max_target_seqs = config['max_target_seqs'],
         outfmt          = "6 qacc sacc pident length qcovs evalue bitscore staxids"
     output:
-        raw = BLAST_HITS_RAW,
-        archive = BLAST_ARCHIVE,
-        tab = BLAST_HITS
+        archive = f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-00-blast_archive.txt",
+        raw     = f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-00-raw_blast_hits.txt",
+        tab     = f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-01-blast_hits.txt"
     shell:
         """
         # run archive blast
         blastp \
             -remote \
             -db {params.db} \
-            -query {input} \
+            -query {input.fasta} \
             -entrez_query "{params.entrez_query}" \
             -max_target_seqs {params.max_target_seqs} \
             -outfmt 11 > {output.archive}
 
-        # parse raw, human-readable blast output
+        # parse tabular and human-readable blast output
         blast_formatter \
             -archive {output.archive} \
             -outfmt "{params.outfmt}" > {output.tab}
-        
+
         blast_formatter \
             -archive {output.archive} \
             -outfmt 0 > {output.raw}
         """
 
+
 rule obtain_accessions:
-    input: BLAST_HITS
-    output: ACCESSIONS
+    input:  f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-01-blast_hits.txt"
+    output: f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-02-accessions.txt"
     shell:
         """
         cut -f2 {input} | sort -u > {output}
@@ -72,16 +70,13 @@ rule obtain_accessions:
 
 
 rule download_sequences:
-    input: ACCESSIONS
-    output: SEQS_FAA
-    params:
-        db   = "protein",
-        seed = SEED_FASTA,
+    input:  f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-02-accessions.txt"
+    output: f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-03.faa"
     shell:
         """
         while read acc; do
             if [ -n "$acc" ]; then
-                efetch -db {params.db} -id "$acc" -format fasta >> {output}
+                efetch -db protein -id "$acc" -format fasta >> {output}
                 sleep 0.1
             fi
         done < {input}
@@ -89,8 +84,8 @@ rule download_sequences:
 
 
 rule align_filtered_sequences:
-    input: SEQS_FAA
-    output: ALIGNED_FAA
+    input:  f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-03.faa"
+    output: f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-04.aln.faa"
     shell:
         """
         mafft --auto {input} > {output}
@@ -98,8 +93,8 @@ rule align_filtered_sequences:
 
 
 rule build_hmm_profile:
-    input: ALIGNED_FAA
-    output: HMM_PROFILE
+    input:  f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-04.aln.faa"
+    output: f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-05.hmm"
     shell:
         """
         hmmbuild {output} {input}
@@ -107,8 +102,12 @@ rule build_hmm_profile:
 
 
 rule hmmpress:
-    input: HMM_PROFILE
-    output: PRESSED_HMM
+    input:  f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-05.hmm"
+    output:
+        multiext(
+            f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-05.hmm",
+            ".h3f", ".h3i", ".h3m", ".h3p"
+        )
     shell:
         """
         hmmpress {input}
@@ -117,10 +116,13 @@ rule hmmpress:
 
 rule hmmsearch:
     input:
-        hmm     = HMM_PROFILE,
+        hmm     = f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-05.hmm",
         target  = TARGET_FASTA,
-        pressed = PRESSED_HMM,
-    output: HMM_SEARCH_OUT
+        pressed = multiext(
+            f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-05.hmm",
+            ".h3f", ".h3i", ".h3m", ".h3p"
+        )
+    output: f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-06-results.tbl"
     shell:
         """
         hmmsearch \
@@ -128,5 +130,3 @@ rule hmmsearch:
             --tblout {output} \
             {input.hmm} {input.target}
         """
- 
-        

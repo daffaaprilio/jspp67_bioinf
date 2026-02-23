@@ -1,12 +1,20 @@
 # workflows/hmm_homology/config.yaml
-seed_fasta:    "../../data/input/prpF.faa"
-prefix:        "prpF_nr"
 
-target_fasta:  "../../data/reference/GCF_000003195.3_Sorghum_bicolor_NCBIv3_protein.faa"
-gene2accession: "../../data/reference/gene2accession.gz"
+# seed name -> fasta path
+seeds:
+  prpF:  "../../data/input/prpF.faa"
+  ais:   "../../data/input/ais.faa"
+  adi1:  "../../data/input/adi1.faa"
 
-results_dir:   "../../results/hmm_homology"
-taxids:        33090        # 33090 viridiplantae(or 3398 for Magnoliopsida/flowering plants)
-max_target_seqs: 100         # Increased to capture more diverse hits
-blastdb:       "nr"
-threads:       4
+# db alias -> blast db string
+dbs:
+  nr:     "nr"
+  refseq: "refseq_protein"
+
+target_fasta:    "../../data/reference/GCF_000003195.3_Sorghum_bicolor_NCBIv3_protein.faa"
+gene2accession:  "../../data/reference/gene2accession.gz"
+
+results_dir:     "../../results/hmm_homology"
+taxids:          33090        # 33090 viridiplantae(or 3398 for Magnoliopsida/flowering plants)
+max_target_seqs: 100          # Increased to capture more diverse hits
+threads:         4
