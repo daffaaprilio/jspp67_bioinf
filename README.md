@@ -4,3 +4,6 @@ To be specific, codes written in this repository will revolve around the utiliza
 
 Currently, this repository contains the following module(s). Other modules are coming soon.
 - HMM-based homology detection
+- KEGG scraping utility to obtain genes of interest
+- Gene network cluster creation (on the way)
+
