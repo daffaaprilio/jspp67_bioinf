@@ -2,10 +2,11 @@
 
 configfile: "../../config.yaml"
 
-SEEDS        = config['seeds']       # {name: fasta_path}
-DBS          = config['dbs']         # {name: blast_db_string}
-TARGET_FASTA = config['target_fasta']
-RESULTS_DIR  = config['results_homology_dir']
+SEEDS           = config['seeds']       # {name: fasta_path}
+DBS             = config['dbs']         # {name: blast_db_string}
+TARGET_FASTA    = config['target_fasta']
+RESULTS_DIR     = config['results_homology_dir']
+RESULTS_NET_DIR = config['results_network_dir']
 
 '''
 A sensitive homology detection strategy:
@@ -13,6 +14,7 @@ A sensitive homology detection strategy:
 2. HMM captures evolutionary patterns from these homologs and finds conserved
    regions in the Sorghum proteome.
 3. HMM hit protein accessions are converted to Sorghum gene IDs via gene2accession.
+4. Converts gene ID into Entrez Gene ID
 Each (seed x db) combination runs independently in its own subdirectory.
 '''
 
@@ -20,7 +22,10 @@ Each (seed x db) combination runs independently in its own subdirectory.
 rule all:
     input:
         expand(
-            f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-06-results.tbl",
+            [
+                f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-06-results.tbl",
+                f"{RESULTS_NET_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-01-homologous_geneID.txt"
+            ],
             seed=SEEDS.keys(),
             db=DBS.keys(),
         )
@@ -130,3 +135,34 @@ rule hmmsearch:
             --tblout {output} \
             {input.hmm} {input.target}
         """
+
+rule obtain_gene2accession:
+    params:
+        reference_dir   = '../../data/reference'
+    output: 
+        '../../data/reference/sorghum_gene2accession'
+    shell:
+        '''
+        # create directory
+        if [[ ! -e {params.reference_dir} ]]; then
+            mkdir -p {params.reference_dir}
+        fi
+        # download from NCBI FTP (taxdump: gene2accession)
+        wget -q -P {params.reference_dir} https://ftp.ncbi.nlm.nih.gov/gene/DATA/gene2accession.gz
+        gunzip -f {params.reference_dir}/gene2accession.gz
+
+        # filter to only include sorghum conversion (taxid 4558)
+        awk -F'\t' '$1 == 4558' {params.reference_dir}/gene2accession > {output}
+        '''
+
+rule convert_id:
+    input:
+        script          = '../gene_network/scripts/convert_id.py',
+        gene2accession  = '../../data/reference/sorghum_gene2accession',
+        hmm_result      = f'{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-06-results.tbl'
+    output:
+        f'{RESULTS_NET_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-01-homologous_geneID.txt'
+    shell:
+        '''
+        python {input.script} -m {input.hmm_result} -r {input.gene2accession} -o {output}
+        '''

@@ -1,25 +1,29 @@
 # workflows/kegg_scraping/kegg_ftp.smk
 
+## next update: add unzipping (tar gz) to the downloaded files
+
 configfile: "./config.yaml"
 
-KEGG_USER   = config['user']
-KEGG_PASS   = config['pass']
+KEGG_USER           = config['user']
+KEGG_PASS           = config['pass']
 # Define URLs for KEGG FTP downloads
-KO_URL          = config['url_ko']
-SBI_URL         = config['url_sbi']
-MAP_URL         = config['url_pathway']
+KO_URL              = config['url_ko']
+KEGG_SP_BASE_URL    = config['url_kegg_sp_base']
+MAP_URL             = config['url_pathway']
+
+ORGANISMS = config['organisms']
 
 """
 Download & prepare the following from KEGG FTP:
     ko.tar.gz (EC to KO mapping)
-    sbi (KO to organism mapping)
+    KEGG_SP (KO to organism mapping)
     map (pathway to KO list)
 """
 
 rule all:
     input:
         '../../data/reference/KEGG/ko.tar.gz',
-        '../../data/reference/KEGG/sbi',
+        expand('../../data/reference/KEGG/{organism}', organism=ORGANISMS),
         '../../data/reference/KEGG/map.tar.gz'
 
 rule obtain_ko:
@@ -28,21 +32,19 @@ rule obtain_ko:
         password    = KEGG_PASS,
         url         = KO_URL
     output:
-        archive     = '../../data/reference/KEGG/ko.tar.gz',
-        outdir      = '../../data/reference/KEGG/ko'
+        archive     = '../../data/reference/KEGG/ko.tar.gz'
     shell:
         """
         wget --user {params.user} --password {params.password} -O {output.archive} {params.url}
-        mkdir -p {output.outdir}
         """
 
-rule obtain_sbi:
+rule obtain_kegg_sp:
     params:
         user        = KEGG_USER,
         password    = KEGG_PASS,
-        url         = SBI_URL
+        url         = lambda wc: f"{KEGG_SP_BASE_URL}{wc.organism}/"
     output:
-        outdir      = directory('../../data/reference/KEGG/sbi'),
+        outdir      = directory('../../data/reference/KEGG/{organism}'),
     shell:
         """
         mkdir -p {output.outdir}
@@ -60,10 +62,8 @@ rule obtain_map:
         password    = KEGG_PASS,
         url         = MAP_URL
     output:
-        archive     = '../../data/reference/KEGG/map.tar.gz',
-        outdir      = '../../data/reference/KEGG/map'
+        archive     = '../../data/reference/KEGG/map.tar.gz'
     shell:
         """
         wget --user {params.user} --password {params.password} -O {output.archive} {params.url}
-        mkdir -p {output.outdir}
         """

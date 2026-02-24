@@ -1,16 +1,17 @@
 # workflows/kegg_scraping/scripts/kegg_pathway_genes.py
 #
-# Extract all organism-specific genes belonging to a given KEGG reference
+# Extract all species-specific genes belonging to a given KEGG reference
 # pathway from locally stored KEGG FTP flat files.
 #
 # Usage:
-#   python kegg_pathway_genes.py --pathway map00660 --organism sbi \
+#   python kegg_pathway_genes.py --pathway map00660 --species sbi \
 #       --kegg-dir data/reference/KEGG --output results/kegg/sbi_map00660_genes.tsv
 
 import argparse
 from pathlib import Path
 
 import pandas as pd
+import subprocess
 
 
 # ---------------------------------------------------------------------------
@@ -30,57 +31,56 @@ def parse_kegg_list(filepath, col_names=("source", "target")):
     return df
 
 
-def get_pathway_genes(pathway, organism, kegg_dir):
+def get_pathway_genes(pathway, species, kegg_dir):
     """
-    Return a DataFrame of organism genes in *pathway* with annotations.
+    Return a DataFrame of species genes in *pathway* with annotations.
 
     Parameters
     ----------
     pathway : str
         Reference pathway id, e.g. ``map00660``.
-    organism : str
-        KEGG three-letter organism code, e.g. ``sbi``.
+    species : str
+        KEGG three-letter species code, e.g. ``sbi``.
     kegg_dir : Path
         Root directory of the local KEGG FTP mirror
-        (expected sub-dirs: ``<organism>/``, ``ko/``, ``map/``).
+        (expected sub-dirs: ``<species>/``, ``ko/``, ``map/``).
 
     Returns
     -------
     pd.DataFrame
         Columns: gene, ko, ncbi_geneid, ncbi_proteinid
     """
-    org_dir = kegg_dir / organism
-    pathway_id = pathway.replace("map", organism)  # map00660 -> sbi00660
+    org_dir = kegg_dir / species
+    pathway_id = pathway.replace("map", species)  # map00660 -> sbi00660 if species is not "all". Otherwise, retain.
 
     # 1. genes in this pathway
-    print(f"[1/4] Parsing {organism}_pathway.list …")
+    print(f"[1/4] Parsing {species}_pathway.list …")
     sbi_pathway = parse_kegg_list(
-        org_dir / f"{organism}_pathway.list", ("gene", "pathway")
+        org_dir / f"{species}_pathway.list", ("gene", "pathway")
     )
     genes = sbi_pathway.loc[sbi_pathway["pathway"] == pathway_id, ["gene"]].copy()
-    print(f"      Found {len(genes)} {organism} genes in pathway {pathway_id}")
+    print(f"      Found {len(genes)} {species} genes in pathway {pathway_id}")
 
     # 2. KO ortholog assignments
-    print(f"[2/4] Parsing {organism}_ko.list …")
-    sbi_ko = parse_kegg_list(org_dir / f"{organism}_ko.list", ("gene", "ko"))
+    print(f"[2/4] Parsing {species}_ko.list …")
+    sbi_ko = parse_kegg_list(org_dir / f"{species}_ko.list", ("gene", "ko"))
     genes = genes.merge(sbi_ko, on="gene", how="left")
 
     # 3. NCBI Gene IDs
-    print(f"[3/4] Parsing {organism}_ncbi-geneid.list …")
+    print(f"[3/4] Parsing {species}_ncbi-geneid.list …")
     sbi_geneid = parse_kegg_list(
-        org_dir / f"{organism}_ncbi-geneid.list", ("gene", "ncbi_geneid")
+        org_dir / f"{species}_ncbi-geneid.list", ("gene", "ncbi_geneid")
     )
     genes = genes.merge(sbi_geneid, on="gene", how="left")
 
     # 4. NCBI Protein accessions
-    print(f"[4/4] Parsing {organism}_ncbi-proteinid.list …")
+    print(f"[4/4] Parsing {species}_ncbi-proteinid.list …")
     sbi_protid = parse_kegg_list(
-        org_dir / f"{organism}_ncbi-proteinid.list", ("gene", "ncbi_proteinid")
+        org_dir / f"{species}_ncbi-proteinid.list", ("gene", "ncbi_proteinid")
     )
     genes = genes.merge(sbi_protid, on="gene", how="left")
 
     return genes
-
 
 # ---------------------------------------------------------------------------
 # CLI
@@ -88,17 +88,23 @@ def get_pathway_genes(pathway, organism, kegg_dir):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Extract organism genes from a KEGG reference pathway."
+        description="Extract species genes from a KEGG reference pathway."
+    )
+    parser.add_argument(
+        "--species",
+        required=True,
+        nargs="+",
+        help=(
+            "Determine homology only from provided species (KEGG three-letter "
+            "species code (e.g. sbi)), rather than from all species listed in "
+            'KEGG. Insert "all" if you want to find homology from all species '
+            "listed in the database."
+        )
     )
     parser.add_argument(
         "--pathway",
         required=True,
         help="Reference pathway id (e.g. map00660)",
-    )
-    parser.add_argument(
-        "--organism",
-        required=True,
-        help="KEGG three-letter organism code (e.g. sbi)",
     )
     parser.add_argument(
         "--kegg-dir",
@@ -110,12 +116,20 @@ def main():
         required=True,
         help="Output TSV path (e.g. results/kegg/sbi_map00660_genes.tsv)",
     )
+
     args = parser.parse_args()
 
     kegg_dir = Path(args.kegg_dir)
     output = Path(args.output)
+    species = args.species
+    
+    if len(species) == 1:
+        genes = get_pathway_genes(args.pathway, species, kegg_dir)
+    if species == "all":
+        genes = get_pathway_genes(args.pathway, "map", kegg_dir)
+    else:
+        genes = 
 
-    genes = get_pathway_genes(args.pathway, args.organism, kegg_dir)
 
     output.parent.mkdir(parents=True, exist_ok=True)
     genes.to_csv(output, sep="\t", index=False)
