@@ -2,7 +2,9 @@
 
 configfile: "../../config.yaml"
 
-PREFIX = config['prefix']
+SEEDS        = config['seeds']       # {name: fasta_path}
+DBS          = config['dbs']         # {name: blast_db_string}
+RESULTS_DIR  = config['results_network_dir']
 
 '''
 0. Download required files (i.e., gene2accession) if not exist
@@ -15,7 +17,12 @@ PREFIX = config['prefix']
 '''
 
 rule all:
-    input: f'../../results/gene_network/{PREFIX}/{PREFIX}-01-homologous_geneID.txt'
+    input: # f'../../results/gene_network/{PREFIX}/{PREFIX}-01-homologous_geneID.txt'
+        expand(
+            f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-01-homologous_geneID.txt",
+            seed=SEEDS.keys(),
+            db=DBS.keys(),  
+        )
 
 rule obtain_gene2accession:
     params:
@@ -40,9 +47,9 @@ rule convert_id:
     input:
         script          = 'scripts/convert_id.py',
         gene2accession   = '../../data/reference/sorghum_gene2accession',
-        hmm_result      = f'../../results/hmm_homology/{PREFIX}/{PREFIX}-06-results.tbl'
+        hmm_result      = f'../../results/hmm_homology/{{seed}}_{{db}}/{{seed}}_{{db}}-06-results.tbl'
     output:
-        f'../../results/gene_network/{PREFIX}/{PREFIX}-01-homologous_geneID.txt'
+        f'../../results/gene_network/{{seed}}_{{db}}/{{seed}}_{{db}}-01-homologous_geneID.txt'
     shell:
         '''
         python {input.script} -m {input.hmm_result} -r {input.gene2accession} -o {output}

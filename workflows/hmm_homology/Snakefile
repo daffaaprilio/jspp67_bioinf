@@ -5,7 +5,7 @@ configfile: "../../config.yaml"
 SEEDS        = config['seeds']       # {name: fasta_path}
 DBS          = config['dbs']         # {name: blast_db_string}
 TARGET_FASTA = config['target_fasta']
-RESULTS_DIR  = config['results_dir']
+RESULTS_DIR  = config['results_homology_dir']
 
 '''
 A sensitive homology detection strategy:

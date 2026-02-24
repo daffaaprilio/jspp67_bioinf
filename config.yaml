@@ -1,4 +1,4 @@
-# workflows/hmm_homology/config.yaml
+# config.yaml
 
 # seed name -> fasta path
 seeds:
@@ -14,7 +14,8 @@ dbs:
 target_fasta:    "../../data/reference/GCF_000003195.3_Sorghum_bicolor_NCBIv3_protein.faa"
 gene2accession:  "../../data/reference/gene2accession.gz"
 
-results_dir:     "../../results/hmm_homology"
+results_homology_dir:     "../../results/hmm_homology"
+results_network_dir:      "../../results/gene_network"
 taxids:          33090        # 33090 viridiplantae(or 3398 for Magnoliopsida/flowering plants)
 max_target_seqs: 100          # Increased to capture more diverse hits
 threads:         4
