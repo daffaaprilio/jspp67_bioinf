@@ -1,8 +1,9 @@
 # workflow/kegg_scraping/Snakefile"
 
 """
-Create a bridging from Obtaining kegg_pathway_genes.py script 
-and the HMM Homology module (../hmm_homology/Snakefile).
+Create a bridging from 
+(a) Obtaining kegg_pathway_genes.py script and 
+(2) the HMM Homology module (../hmm_homology/Snakefile).
 
 Run this everytime you want to get the list of bait genes, even when you 
 only provide one species for the kegg_pathway_genes.py script. 
@@ -18,9 +19,27 @@ RESULTS_KEGG_DIR    = config['results_kegg_dir'] # f"../../results/kegg"
 
 rule all:
 
+rule kegg_pathway_genes:
+    input:
+        script  = './scripts/kegg_pathway_genes.py',
+    output:
+        f"{RESULTS_KEGG_DIR}/{SPECIES}_{PATHWAY}_genes.tsv"
+    params:
+        kegg_d  = KEGG_DIR,
+        pathway = PATHWAY,
+        sp      = SPECIES,
+    shell:
+        """
+        python {input.script} \
+            --pathway {params.pathway} \
+            --species {params.sp} \
+            --kegg-dir {params.kegg_d} \
+            --output {output}
+        """
+
 rule separate_by_gene:
     input:  
-        pathway_gene_file   = f"{RESULTS_KEGG_DIR}/{SPECIES}_{pathway}_genes.tsv" # pathway gene file (output from the kegg_pathway_genes.py script)
+        pathway_gene_file   = f"{RESULTS_KEGG_DIR}/{SPECIES}_{pathway}_genes.tsv", # pathway gene file (output from the kegg_pathway_genes.py script)
         script              = './scripts/separate_pathway_gene_files.py'
     output: 
         f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-01-pathway_genes_from_KEGG.txt" 
@@ -30,8 +49,10 @@ rule separate_by_gene:
         """
 
 rule obtain_accessions:
-    input:  f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-01-ssdfg.txt" 
-    output: f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-02-accessions.txt"
+    input:  
+        f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-01-ssdfg.txt" 
+    output: 
+        f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-02-accessions.txt"
     shell:
         """
         """
