@@ -1,1 +1,0 @@
-# workflows/kegg_scraping/scripts/kegg_ftp.py
