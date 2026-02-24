@@ -1,0 +1,46 @@
+# workflow/kegg_scraping/Snakefile"
+
+"""
+Create a bridging from Obtaining kegg_pathway_genes.py script 
+and the HMM Homology module (../hmm_homology/Snakefile).
+
+Run this everytime you want to get the list of bait genes, even when you 
+only provide one species for the kegg_pathway_genes.py script. 
+It is natural that the mentioned python script output more than one gene for 
+one reaction. HMM homology will find the best fitting one (based on the result.tbl evalue info).
+"""
+
+SPECIES             = config['species'] # sbi-zma
+PATHWAY             = config['pathway'] # map00020
+KEGG_DIR            = config['kegg_dir']
+RESULTS_DIR         = config['results_dir'] # f"../../results/hmm_homology"
+RESULTS_KEGG_DIR    = config['results_kegg_dir'] # f"../../results/kegg"
+
+rule all:
+
+rule separate_by_gene:
+    input:  
+        pathway_gene_file   = f"{RESULTS_KEGG_DIR}/{SPECIES}_{pathway}_genes.tsv" # pathway gene file (output from the kegg_pathway_genes.py script)
+        script              = './scripts/separate_pathway_gene_files.py'
+    output: 
+        f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-01-pathway_genes_from_KEGG.txt" 
+    shell:
+        """
+        python {input.script} 
+        """
+
+rule obtain_accessions:
+    input:  f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-01-ssdfg.txt" 
+    output: f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-02-accessions.txt"
+    shell:
+        """
+        """
+
+
+
+module hmm_homology:
+    snakefile: "../hmm_homology/Snakefile"
+
+use rule * from hmm_homology as hmm_homology_*
+
+

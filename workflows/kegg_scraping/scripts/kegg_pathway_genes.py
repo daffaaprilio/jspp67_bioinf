@@ -11,7 +11,6 @@ import argparse
 from pathlib import Path
 
 import pandas as pd
-import subprocess
 
 
 # ---------------------------------------------------------------------------
@@ -123,13 +122,18 @@ def main():
     output = Path(args.output)
     species = args.species
     
-    if len(species) == 1:
-        genes = get_pathway_genes(args.pathway, species, kegg_dir)
-    if species == "all":
-        genes = get_pathway_genes(args.pathway, "map", kegg_dir)
-    else:
-        genes = 
+    if "all" in species:
+        raise NotImplementedError(
+            'Processing for "all" species is not implemented.\n'
+            'Provide one or more specific KEGG organism codes instead.'
+        )
 
+    dfs = []
+    for sp in species:
+        df = get_pathway_genes(args.pathway, sp, kegg_dir)
+        df.insert(0, "species", sp)
+        dfs.append(df)
+    genes = pd.concat(dfs, ignore_index=True)
 
     output.parent.mkdir(parents=True, exist_ok=True)
     genes.to_csv(output, sep="\t", index=False)

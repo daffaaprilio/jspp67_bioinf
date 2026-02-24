@@ -2,7 +2,14 @@
 
 ## next update: add unzipping (tar gz) to the downloaded files
 
-configfile: "./config.yaml"
+"""
+Download & prepare the following from KEGG FTP:
+    ko.tar.gz (EC to KO mapping)
+    KEGG_SP (KO to organism mapping)
+    map (pathway to KO list)
+"""
+
+configfile: "./config-kegg_ftp.yaml"
 
 KEGG_USER           = config['user']
 KEGG_PASS           = config['pass']
@@ -12,13 +19,6 @@ KEGG_SP_BASE_URL    = config['url_kegg_sp_base']
 MAP_URL             = config['url_pathway']
 
 ORGANISMS = config['organisms']
-
-"""
-Download & prepare the following from KEGG FTP:
-    ko.tar.gz (EC to KO mapping)
-    KEGG_SP (KO to organism mapping)
-    map (pathway to KO list)
-"""
 
 rule all:
     input:
