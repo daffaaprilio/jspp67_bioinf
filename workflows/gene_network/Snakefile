@@ -7,50 +7,8 @@ DBS          = config['dbs']         # {name: blast_db_string}
 RESULTS_DIR  = config['results_network_dir']
 
 '''
-0. Download required files (i.e., gene2accession) if not exist
-1. Convert to standard gene ID
-    a. Parse the HMM Homology search result
-    b. Obtain the homologous protein sequence name
-    c. Find the matching gene ID for the protein sequence(s)
+1. 
 2. Construct graph from gene IDs
 3. Output (pickle object of Graph) can be visualized via Cytoscape (through Jupyter Notebook)
 '''
 
-rule all:
-    input: # f'../../results/gene_network/{PREFIX}/{PREFIX}-01-homologous_geneID.txt'
-        expand(
-            f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-01-homologous_geneID.txt",
-            seed=SEEDS.keys(),
-            db=DBS.keys(),  
-        )
-
-rule obtain_gene2accession:
-    params:
-        reference_dir   = '../../data/reference'
-    output: 
-        '../../data/reference/sorghum_gene2accession'
-    shell:
-        '''
-        # create directory
-        if [[ ! -e {params.reference_dir} ]]; then
-            mkdir -p {params.reference_dir}
-        fi
-        # download from NCBI FTP (taxdump: gene2accession)
-        wget -q -P {params.reference_dir} https://ftp.ncbi.nlm.nih.gov/gene/DATA/gene2accession.gz
-        gunzip -f {params.reference_dir}/gene2accession.gz
-
-        # filter to only include sorghum conversion (taxid 4558)
-        awk -F'\t' '$1 == 4558' {params.reference_dir}/gene2accession > {output}
-        '''
-
-rule convert_id:
-    input:
-        script          = 'scripts/convert_id.py',
-        gene2accession   = '../../data/reference/sorghum_gene2accession',
-        hmm_result      = f'../../results/hmm_homology/{{seed}}_{{db}}/{{seed}}_{{db}}-06-results.tbl'
-    output:
-        f'../../results/gene_network/{{seed}}_{{db}}/{{seed}}_{{db}}-01-homologous_geneID.txt'
-    shell:
-        '''
-        python {input.script} -m {input.hmm_result} -r {input.gene2accession} -o {output}
-        '''

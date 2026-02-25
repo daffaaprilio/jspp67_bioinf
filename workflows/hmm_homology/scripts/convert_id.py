@@ -1,4 +1,4 @@
-# workflows/gene_network/scripts/convert_id.py
+# workflows/hmm_homology/scripts/convert_id.py
 #
 # Convert hmmsearch tblout protein accessions to Sorghum gene IDs
 # via NCBI gene2accession file.
