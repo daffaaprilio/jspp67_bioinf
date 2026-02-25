@@ -5,18 +5,17 @@
 # Jupyter Network interface
 #
 # Usage: (via main snakefile) or run 
-#       python build_graph.py --gene-no 10 --z-score 4
+#       python build_graph.py
 # 
 
 from pathlib import Path
 import pandas as pd
 import networkx as nx
 import pickle
-from datetime import datetime
 import argparse
 
-timestamp = datetime.now().strftime('%Y%m%d_%H%M')
-sbi_coex_dir = Path('../../../data/reference/sbi_coex')
+WDIR = Path(__file__).resolve().parents[3]
+sbi_coex_dir = WDIR / 'data/reference/sbi_coex'
 
 
 # ---------------------------------------------------------------------------
@@ -113,6 +112,6 @@ if __name__ == '__main__':
 
     K = args.gene_no
     minZ = args.z_score
-    output = args.output or Path(f'/Users/daffa/Documents/Work/jspp67_bioinf/results/gene_network/sbi_graph_object-{minZ}_{K}_{timestamp}.pkl')
+    output = args.output or WDIR / f'results/gene_network/sbi_G-z{minZ}_k{K}.pkl'
 
     main(args.coex_dir, output, K, minZ)
