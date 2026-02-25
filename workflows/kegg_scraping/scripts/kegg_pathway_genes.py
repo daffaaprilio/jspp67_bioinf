@@ -51,33 +51,35 @@ def get_pathway_genes(pathway, species, kegg_dir):
     """
     org_dir = kegg_dir / species
     pathway_id = pathway.replace("map", species)  # map00660 -> sbi00660 if species is not "all". Otherwise, retain.
+    
+    print(f"Preparing species name: {species}")
 
     # 1. genes in this pathway
-    print(f"[1/4] Parsing {species}_pathway.list …")
-    sbi_pathway = parse_kegg_list(
+    print(f"[1/4] Parsing {species}_pathway.list ...")
+    sp_pathway = parse_kegg_list(
         org_dir / f"{species}_pathway.list", ("gene", "pathway")
     )
-    genes = sbi_pathway.loc[sbi_pathway["pathway"] == pathway_id, ["gene"]].copy()
+    genes = sp_pathway.loc[sp_pathway["pathway"] == pathway_id, ["gene"]].copy()
     print(f"      Found {len(genes)} {species} genes in pathway {pathway_id}")
 
-    # 2. KO ortholog assignments
-    print(f"[2/4] Parsing {species}_ko.list …")
-    sbi_ko = parse_kegg_list(org_dir / f"{species}_ko.list", ("gene", "ko"))
-    genes = genes.merge(sbi_ko, on="gene", how="left")
-
-    # 3. NCBI Gene IDs
-    print(f"[3/4] Parsing {species}_ncbi-geneid.list …")
-    sbi_geneid = parse_kegg_list(
+    # 2. genes in EGI format (ncbi gene id)
+    print(f"[2/4] Parsing {species}_ncbi-geneid.list ...")
+    sp_geneid = parse_kegg_list(
         org_dir / f"{species}_ncbi-geneid.list", ("gene", "ncbi_geneid")
     )
-    genes = genes.merge(sbi_geneid, on="gene", how="left")
+    genes = genes.merge(sp_geneid, on="gene", how="left")
+
+    # 3. KO ortholog assignments
+    print(f"[3/4] Parsing {species}_ko.list ...")
+    sp_ko = parse_kegg_list(org_dir / f"{species}_ko.list", ("gene", "ko"))
+    genes = genes.merge(sp_ko, on="gene", how="left")
 
     # 4. NCBI Protein accessions
-    print(f"[4/4] Parsing {species}_ncbi-proteinid.list …")
-    sbi_protid = parse_kegg_list(
+    print(f"[4/4] Parsing {species}_ncbi-proteinid.list ...")
+    sp_protid = parse_kegg_list(
         org_dir / f"{species}_ncbi-proteinid.list", ("gene", "ncbi_proteinid")
     )
-    genes = genes.merge(sbi_protid, on="gene", how="left")
+    genes = genes.merge(sp_protid, on="gene", how="left")
 
     return genes
 
@@ -96,8 +98,9 @@ def main():
         help=(
             "Determine homology only from provided species (KEGG three-letter "
             "species code (e.g. sbi)), rather than from all species listed in "
-            'KEGG. Insert "all" if you want to find homology from all species '
-            "listed in the database."
+            'KEGG. Insert "atted-plants" if you want to insert ATTED-II plants. '
+            'Insert "all" if you want to find homology from all species '
+            "listed in the database (coming soon)."
         )
     )
     parser.add_argument(
@@ -126,6 +129,13 @@ def main():
         raise NotImplementedError(
             'Processing for "all" species is not implemented.\n'
             'Provide one or more specific KEGG organism codes instead.'
+        )
+    
+    if "atted-plants" in species:
+        species = (
+            "ath", "bdi", "bna", "brp", "cit", "cre", "ghi", "gmx",
+            "mtr", "nta", "osa", "pop", "sbi", "sly", "sot", "taes",
+            "vvi", "zma"
         )
 
     dfs = []

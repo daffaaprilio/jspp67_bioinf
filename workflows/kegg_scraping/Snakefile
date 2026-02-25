@@ -1,5 +1,19 @@
 # workflow/kegg_scraping/Snakefile"
 
+from pathlib import Path
+
+configfile: "../../config.yaml"
+
+SPECIES             = config['species'] # atted-plants: (sbi zma ... ath)
+PATHWAY             = config['pathway'] # map00020
+
+TARGET_FASTA        = config['target_fasta']
+KEGG_DIR            = config['reference_kegg_dir'] # f"../../data/reference/KEGG"
+RESULTS_DIR         = config['results_homology_dir']
+RESULTS_KEGG_DIR    = config['results_kegg_dir'] # f"../../results/kegg"
+RESULTS_KO_DIR      = config['results_ko_dir']
+RESULTS_NET_DIR     = config['results_network_dir']
+
 """
 Create a bridging from 
 (a) Obtaining kegg_pathway_genes.py script and 
@@ -11,17 +25,23 @@ It is natural that the mentioned python script output more than one gene for
 one reaction. HMM homology will find the best fitting one (based on the result.tbl evalue info).
 """
 
-SPECIES             = config['species'] # sbi-zma
-PATHWAY             = config['pathway'] # map00020
-KEGG_DIR            = config['kegg_dir']
-RESULTS_DIR         = config['results_dir'] # f"../../results/hmm_homology"
-RESULTS_KEGG_DIR    = config['results_kegg_dir'] # f"../../results/kegg"
+def aggregate_final_outputs(wildcards):
+    checkpoint_output = checkpoints.separate_by_function.get(**wildcards).output[0]
+    # discover all KO IDs from the directory that the checkpoint created
+    ko_ids, = glob_wildcards(Path(checkpoint_output) / "{seed}_kegg" / "{seed}_kegg-01-pathway_genes_from_KEGG.txt")
+    
+    return expand(
+        f"{RESULTS_NET_DIR}/{{seed}}_kegg/{{seed}}_kegg-01-homologous_geneID.txt",
+        seed=ko_ids
+    )
 
 rule all:
+    input:
+        aggregate_final_outputs
 
 rule kegg_pathway_genes:
     input:
-        script  = './scripts/kegg_pathway_genes.py',
+        script  = 'scripts/kegg_pathway_genes.py',
     output:
         f"{RESULTS_KEGG_DIR}/{SPECIES}_{PATHWAY}_genes.tsv"
     params:
@@ -37,31 +57,50 @@ rule kegg_pathway_genes:
             --output {output}
         """
 
-rule separate_by_gene:
+checkpoint separate_by_function:
     input:  
-        pathway_gene_file   = f"{RESULTS_KEGG_DIR}/{SPECIES}_{pathway}_genes.tsv", # pathway gene file (output from the kegg_pathway_genes.py script)
-        script              = './scripts/separate_pathway_gene_files.py'
+        pathway_gene_file   = f"{RESULTS_KEGG_DIR}/{SPECIES}_{PATHWAY}_genes.tsv", # pathway gene file (output from the kegg_pathway_genes.py script)
+        script              = 'scripts/separate_pathway_gene_files.py'
     output: 
-        f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-01-pathway_genes_from_KEGG.txt" 
+        directory(RESULTS_KO_DIR)
+    params:
+        pathway     = PATHWAY
     shell:
         """
-        python {input.script} 
+        python {input.script} --input {input.pathway_gene_file} --output {output} --pathway {params.pathway}
         """
 
-rule obtain_accessions:
-    input:  
-        f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-01-ssdfg.txt" 
-    output: 
-        f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-02-accessions.txt"
+rule obtain_spgeneid:
+    input:
+        tsv    = f"{RESULTS_KO_DIR}/{{seed}}_kegg/{{seed}}_kegg-01-pathway_genes_from_KEGG.txt",
+        script = 'scripts/obtain_spgeneid.py'
+    output:
+        f"{RESULTS_KO_DIR}/{{seed}}_kegg/{{seed}}_kegg-02-spgeneid.txt"
     shell:
         """
+        python {input.script} --input {input.tsv} --output {output}
         """
 
+rule obtain_sequences:
+    input:
+        spgeneid = f"{RESULTS_KO_DIR}/{{seed}}_kegg/{{seed}}_kegg-02-spgeneid.txt",
+        script   = 'scripts/obtain_aa_sequences.py'
+    output:
+        f"{RESULTS_DIR}/{{seed}}_kegg/{{seed}}_kegg-03.faa"
+    params:
+        kegg_dir = KEGG_DIR
+    shell:
+        """
+        python {input.script} --input {input.spgeneid} --kegg-dir {params.kegg_dir} --output {output}
+        """
 
+# after the rule obtain_sequences, go to HMM homology modules' rule align_filtered sequences
+
+ruleorder: obtain_sequences > hmm_homology_download_sequences
 
 module hmm_homology:
     snakefile: "../hmm_homology/Snakefile"
+    config: config
 
 use rule * from hmm_homology as hmm_homology_*
-
 
