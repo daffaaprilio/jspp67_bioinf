@@ -10,6 +10,9 @@ import pandas as pd
 from pathlib import Path
 import argparse
 
+# ---------------------------------------------------------------------------
+# helpers
+# ---------------------------------------------------------------------------
 
 def parse_hmmsearch_tblout(tblout_path):
     """
@@ -92,6 +95,10 @@ def save_gene_ids(mapped, output_path):
     """
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     mapped.to_csv(output_path, sep='\t', header=True, index=False)
+
+# ---------------------------------------------------------------------------
+# main
+# ---------------------------------------------------------------------------
 
 def main():
     parser = argparse.ArgumentParser(

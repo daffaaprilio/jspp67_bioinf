@@ -12,7 +12,6 @@ KEGG_DIR            = config['reference_kegg_dir'] # f"../../data/reference/KEGG
 RESULTS_DIR         = config['results_homology_dir']
 RESULTS_KEGG_DIR    = config['results_kegg_dir'] # f"../../results/kegg"
 RESULTS_KO_DIR      = config['results_ko_dir']
-RESULTS_NET_DIR     = config['results_network_dir']
 
 """
 Create a bridging from 
@@ -31,7 +30,7 @@ def aggregate_final_outputs(wildcards):
     ko_ids, = glob_wildcards(Path(checkpoint_output) / "{seed}_kegg" / "{seed}_kegg-01-pathway_genes_from_KEGG.txt")
     
     return expand(
-        f"{RESULTS_NET_DIR}/{{seed}}_kegg/{{seed}}_kegg-01-homologous_geneID.txt",
+        f"{RESULTS_DIR}/{{seed}}_kegg/{{seed}}_kegg-07-homologous_geneID.txt",
         seed=ko_ids
     )
 

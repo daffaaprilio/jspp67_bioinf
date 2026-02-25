@@ -6,7 +6,6 @@ SEEDS           = config['seeds']       # {name: fasta_path}
 DBS             = config['dbs']         # {name: blast_db_string}
 TARGET_FASTA    = config['target_fasta']
 RESULTS_DIR     = config['results_homology_dir']
-RESULTS_NET_DIR = config['results_network_dir']
 
 '''
 A sensitive homology detection strategy:
@@ -24,7 +23,7 @@ rule all:
         expand(
             [
                 f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-06-results.tbl",
-                f"{RESULTS_NET_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-01-homologous_geneID.txt"
+                f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-07-homologous_geneID.txt"
             ],
             seed=SEEDS.keys(),
             db=DBS.keys(),
@@ -161,7 +160,7 @@ rule convert_id:
         gene2accession  = '../../data/reference/sorghum_gene2accession',
         hmm_result      = f'{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-06-results.tbl'
     output:
-        f'{RESULTS_NET_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-01-homologous_geneID.txt'
+        f'{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-07-homologous_geneID.txt'
     shell:
         '''
         python {input.script} -m {input.hmm_result} -r {input.gene2accession} -o {output}
