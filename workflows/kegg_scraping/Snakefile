@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-configfile: "../../config.yaml"
+configfile: "../../configs/config.yaml"
 
 SPECIES             = config['species'] # atted-plants: (sbi zma ... ath)
 PATHWAY             = config['pathway'] # map00020

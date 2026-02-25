@@ -9,7 +9,7 @@ Download & prepare the following from KEGG FTP:
     map (pathway to KO list)
 """
 
-configfile: "./config-kegg_ftp.yaml"
+configfile: "../../configs/config-kegg_ftp.yaml"
 
 KEGG_USER           = config['user']
 KEGG_PASS           = config['pass']

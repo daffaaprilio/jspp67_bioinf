@@ -1,6 +1,6 @@
 # workflows/hmm_homology/Snakefile
 
-configfile: "../../config.yaml"
+configfile: "../../configs/config.yaml"
 
 SEEDS           = config['seeds']       # {name: fasta_path}
 DBS             = config['dbs']         # {name: blast_db_string}

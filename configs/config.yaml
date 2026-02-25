@@ -15,7 +15,7 @@ results_ko_dir:           "../../results/by_ko"
 
 # for pathway data in KEGG scraping module
 species:    "atted-plants"
-pathway:    "map00020" # "map00660"
+pathway:    "map00020 map00660"
 
 # blast settings in HMM module
 seeds:

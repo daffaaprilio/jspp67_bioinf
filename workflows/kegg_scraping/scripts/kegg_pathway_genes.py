@@ -4,7 +4,7 @@
 # pathway from locally stored KEGG FTP flat files.
 #
 # Usage:
-#   python kegg_pathway_genes.py --pathway map00660 --species sbi \
+#   python kegg_pathway_genes.py --pathways map00660 --species sbi \
 #       --kegg-dir data/reference/KEGG --output results/kegg/sbi_map00660_genes.tsv
 
 import argparse
@@ -104,19 +104,20 @@ def main():
         )
     )
     parser.add_argument(
-        "--pathway",
+        "--pathways",
         required=True,
-        help="Reference pathway id (e.g. map00660)",
+        nargs="+",
+        help="Reference pathways id (e.g. map00660 map00020)",
     )
     parser.add_argument(
         "--kegg-dir",
-        default="data/reference/KEGG",
+        default="../../../data/reference/KEGG",
         help="Root of the local KEGG FTP mirror (default: data/reference/KEGG)",
     )
     parser.add_argument(
         "--output",
         required=True,
-        help="Output TSV path (e.g. results/kegg/sbi_map00660_genes.tsv)",
+        help="Output directory for TSV files (one file per pathway, e.g. results/kegg/)",
     )
 
     args = parser.parse_args()
@@ -124,6 +125,7 @@ def main():
     kegg_dir = Path(args.kegg_dir)
     output = Path(args.output)
     species = args.species
+    pathways = args.pathways
     
     if "all" in species:
         raise NotImplementedError(
@@ -138,16 +140,21 @@ def main():
             "vvi", "zma"
         )
 
-    dfs = []
-    for sp in species:
-        df = get_pathway_genes(args.pathway, sp, kegg_dir)
-        df.insert(0, "species", sp)
-        dfs.append(df)
-    genes = pd.concat(dfs, ignore_index=True)
+    output.mkdir(parents=True, exist_ok=True)
+    species_label = args.species[0] if len(args.species) == 1 else "_".join(args.species[:2])
 
-    output.parent.mkdir(parents=True, exist_ok=True)
-    genes.to_csv(output, sep="\t", index=False)
-    print(f"\nSaved {len(genes)} genes → {output}")
+    for pathway in pathways:
+        dfs = []
+        for sp in species:
+            df = get_pathway_genes(pathway, sp, kegg_dir)
+            df.insert(0, "pathway", pathway)
+            df.insert(0, "species", sp)
+            dfs.append(df)
+        pathway_df = pd.concat(dfs, ignore_index=True)
+
+        outfile = output / f"{species_label}_{pathway}_genes.tsv"
+        pathway_df.to_csv(outfile, sep="\t", index=False)
+        print(f"\nSaved {len(pathway_df)} genes → {outfile}")
 
 
 if __name__ == "__main__":
