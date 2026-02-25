@@ -1,14 +1,50 @@
 # workflows/gene_network/Snakefile
 
-configfile: "../../config.yaml"
+configfile: "../../configs/config.yaml"
 
-SEEDS        = config['seeds']       # {name: fasta_path}
-DBS          = config['dbs']         # {name: blast_db_string}
-RESULTS_DIR  = config['results_network_dir']
+WDIR                = config['wdir']
+RESULTS_NET_DIR     = f"{WDIR}/{config['results_network_dir']}"
+COEX_DIR            = f"{WDIR}/{config['coex_dir']}"
+MIN_Z               = config['minZ_score']
+TOP_K_GENES         = config['top_K_genes']
+PATHWAYS            = config['pathways']
 
 '''
-1. 
-2. Construct graph from gene IDs
-3. Output (pickle object of Graph) can be visualized via Cytoscape (through Jupyter Notebook)
+1. Construct graph from Sorghum gene co-expression data (with applied filtering)
+2. Add annotations (i.e., pathway ID & KO ID to nodes in the graph object)
+3. Output graph as pickle object that can be visualized via Cytoscape (through Jupyter Notebook)
 '''
+
+rule all:
+    input:
+        expand(f"{RESULTS_NET_DIR}/sbi_G_annotated-z{MIN_Z}_k{TOP_K_GENES}.{{ext}}", ext=["pkl", "seed_genes.tsv"]),
+        f"{RESULTS_NET_DIR}/sbi_G-z{MIN_Z}_k{TOP_K_GENES}.pkl"
+
+rule build_graph_object:
+    input:
+        script  = "scripts/build_graph.py"
+    params:
+        gene_no     = TOP_K_GENES,
+        min_z       = MIN_Z,
+        coex_dir    = COEX_DIR
+    output:
+        f"{RESULTS_NET_DIR}/sbi_G-z{MIN_Z}_k{TOP_K_GENES}.pkl"
+    shell:
+        """
+        python3 {input.script} --gene-no {params.gene_no} --z-score {params.min_z} --coex-dir {params.coex_dir}
+        """
+    
+rule annotate_graph_object:
+    input:
+        script      = "scripts/load_annotate_seed_genes.py",
+        pickle      = f"{RESULTS_NET_DIR}/sbi_G-z{MIN_Z}_k{TOP_K_GENES}.pkl"
+    params:
+        pathways    = PATHWAYS
+    output:
+        expand(f"{RESULTS_NET_DIR}/sbi_G_annotated-z{MIN_Z}_k{TOP_K_GENES}.{{ext}}", ext=["pkl", "seed_genes.tsv"])
+    shell:
+        """
+        python3 {input.script} --graph-pickle {input.pickle} --pathways {params.pathways}
+        """
+
 

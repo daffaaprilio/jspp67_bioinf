@@ -12,6 +12,8 @@ from pathlib import Path
 
 import pandas as pd
 
+WDIR = Path(__file__).resolve().parents[3]
+
 
 # ---------------------------------------------------------------------------
 # helpers
@@ -111,7 +113,7 @@ def main():
     )
     parser.add_argument(
         "--kegg-dir",
-        default="../../../data/reference/KEGG",
+        default=str(WDIR / 'data/reference/KEGG'),
         help="Root of the local KEGG FTP mirror (default: data/reference/KEGG)",
     )
     parser.add_argument(

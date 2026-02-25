@@ -4,14 +4,15 @@ from pathlib import Path
 
 configfile: "../../configs/config.yaml"
 
+WDIR                = config['wdir']
 SPECIES             = config['species'] # atted-plants: (sbi zma ... ath)
-PATHWAY             = config['pathway'] # map00020
+PATHWAY             = config['pathways'] # map00020
 
-TARGET_FASTA        = config['target_fasta']
-KEGG_DIR            = config['reference_kegg_dir'] # f"../../data/reference/KEGG"
-RESULTS_DIR         = config['results_homology_dir']
-RESULTS_KEGG_DIR    = config['results_kegg_dir'] # f"../../results/kegg"
-RESULTS_KO_DIR      = config['results_ko_dir']
+TARGET_FASTA        = f"{WDIR}/{config['target_fasta']}"
+KEGG_DIR            = f"{WDIR}/{config['reference_kegg_dir']}"
+RESULTS_DIR         = f"{WDIR}/{config['results_homology_dir']}"
+RESULTS_KEGG_DIR    = f"{WDIR}/{config['results_kegg_dir']}"
+RESULTS_KO_DIR      = f"{WDIR}/{config['results_ko_dir']}"
 
 """
 Create a bridging from 

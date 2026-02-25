@@ -1,13 +1,13 @@
 # Root Snakefile — orchestrates all workflow modules.
 
-configfile: "config.yaml"
+configfile: "configs/config.yaml"
 
 
 # ── Modules ──────────────────────────────────────────────────────────────────
 
 module hmm_homology:
     snakefile: "workflows/hmm_homology/Snakefile"
-    config: config["hmm_homology"]
+    config: config
 
 use rule * from hmm_homology as hmm_homology_*
 

@@ -2,10 +2,11 @@
 
 configfile: "../../configs/config.yaml"
 
-SEEDS           = config['seeds']       # {name: fasta_path}
+WDIR            = config['wdir']
+SEEDS           = {k: f"{WDIR}/{v}" for k, v in config['seeds'].items()}
 DBS             = config['dbs']         # {name: blast_db_string}
-TARGET_FASTA    = config['target_fasta']
-RESULTS_DIR     = config['results_homology_dir']
+TARGET_FASTA    = f"{WDIR}/{config['target_fasta']}"
+RESULTS_DIR     = f"{WDIR}/{config['results_homology_dir']}"
 
 '''
 A sensitive homology detection strategy:
@@ -137,9 +138,9 @@ rule hmmsearch:
 
 rule obtain_gene2accession:
     params:
-        reference_dir   = '../../data/reference'
+        reference_dir   = f"{WDIR}/data/reference"
     output: 
-        '../../data/reference/sorghum_gene2accession'
+        f"{WDIR}/data/reference/sorghum_gene2accession"
     shell:
         '''
         # create directory
@@ -157,7 +158,7 @@ rule obtain_gene2accession:
 rule convert_id:
     input:
         script          = '../hmm_homology/scripts/convert_id.py',
-        gene2accession  = '../../data/reference/sorghum_gene2accession',
+        gene2accession  = f'{WDIR}/data/reference/sorghum_gene2accession',
         hmm_result      = f'{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-06-results.tbl'
     output:
         f'{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-07-homologous_geneID.txt'
