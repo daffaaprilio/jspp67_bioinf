@@ -7,6 +7,7 @@ SEEDS           = {k: f"{WDIR}/{v}" for k, v in config['seeds'].items()}
 DBS             = config['dbs']         # {name: blast_db_string}
 TARGET_FASTA    = f"{WDIR}/{config['target_fasta']}"
 RESULTS_DIR     = f"{WDIR}/{config['results_homology_dir']}"
+BLASTDB_DIR     = f"{WDIR}/{config['blastdb_dir']}"
 
 '''
 A sensitive homology detection strategy:
@@ -30,30 +31,50 @@ rule all:
             db=DBS.keys(),
         )
 
+rule setup_blastdb:
+    output:
+        ok = touch(f"{BLASTDB_DIR}/download.ok")
+    params:
+        outdir = BLASTDB_DIR,
+        dbs    = " ".join(DBS.values())   # e.g. "nr refseq_protein"
+    shell:
+        """
+        mkdir -p {params.outdir}
+        cd {params.outdir}
+
+        # download taxonomy (needed for -entrez_query filtering)
+        update_blastdb.pl --decompress taxdb
+
+        # download each configured BLAST database
+        for db in {params.dbs}; do
+            update_blastdb.pl --decompress "$db"
+        done
+        """
 
 rule blast_seed_gene:
     input:
-        fasta = lambda wc: SEEDS[wc.seed]
+        fasta  = lambda wc: SEEDS[wc.seed],
+        db_ok  = f"{BLASTDB_DIR}/download.ok"
     params:
         db              = lambda wc: DBS[wc.db],
-        entrez_query    = "txid{taxids}[Organism]".format(taxids=config['taxids']),
+        blastdb_dir     = BLASTDB_DIR,
         max_target_seqs = config['max_target_seqs'],
         outfmt          = "6 qacc sacc pident length qcovs evalue bitscore staxids",
-        api_key         = config['ncbi_api']
     output:
         archive = f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-00-blast_archive.txt",
         raw     = f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-00-raw_blast_hits.txt",
         tab     = f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-01-blast_hits.txt"
+    retries: 2
     shell:
         """
-        export NCBI_API_KEY={params.api_key}
-        
-        # run archive blast
+        set -euo pipefail
+        export BLASTDB={params.blastdb_dir}
+
+        # run archive blast against local database
         blastp \
-            -remote \
             -db {params.db} \
             -query {input.fasta} \
-            -entrez_query "{params.entrez_query}" \
+
             -max_target_seqs {params.max_target_seqs} \
             -outfmt 11 > {output.archive}
 
@@ -65,6 +86,11 @@ rule blast_seed_gene:
         blast_formatter \
             -archive {output.archive} \
             -outfmt 0 > {output.raw}
+
+        if [ ! -s {output.tab} ]; then
+            echo "ERROR: BLAST returned no hits for {wildcards.seed} vs {wildcards.db}." >&2
+            exit 1
+        fi
         """
 
 
@@ -79,13 +105,9 @@ rule obtain_accessions:
 
 rule download_sequences:
     input:  f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-02-accessions.txt"
-    params:         
-        api_key = config['ncbi_api']
     output: f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-03.faa"
     shell:
         """
-        export NCBI_API_KEY={params.api_key}
-
         while read acc; do
             if [ -n "$acc" ]; then
                 efetch -db protein -id "$acc" -format fasta >> {output}
