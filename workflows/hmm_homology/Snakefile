@@ -38,13 +38,16 @@ rule blast_seed_gene:
         db              = lambda wc: DBS[wc.db],
         entrez_query    = "txid{taxids}[Organism]".format(taxids=config['taxids']),
         max_target_seqs = config['max_target_seqs'],
-        outfmt          = "6 qacc sacc pident length qcovs evalue bitscore staxids"
+        outfmt          = "6 qacc sacc pident length qcovs evalue bitscore staxids",
+        api_key         = config['ncbi_api']
     output:
         archive = f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-00-blast_archive.txt",
         raw     = f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-00-raw_blast_hits.txt",
         tab     = f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-01-blast_hits.txt"
     shell:
         """
+        export NCBI_API_KEY={params.api_key}
+        
         # run archive blast
         blastp \
             -remote \
@@ -76,9 +79,13 @@ rule obtain_accessions:
 
 rule download_sequences:
     input:  f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-02-accessions.txt"
+    params:         
+        api_key = config['ncbi_api']
     output: f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-03.faa"
     shell:
         """
+        export NCBI_API_KEY={params.api_key}
+
         while read acc; do
             if [ -n "$acc" ]; then
                 efetch -db protein -id "$acc" -format fasta >> {output}

@@ -8,7 +8,18 @@ Currently, this repository contains the following module(s). Other modules are c
 - Gene network cluster creation
 
 ## To run each module separately
-Recommended for current stage: network inference method.
+Recommended method for the current stage: find previously annotated TAA-related genes. Requires 
+obtaining amino acid sequences from reviewing relevant literatures, then 
+save them in the `data/input` directory.
+```shell
+# prepare the input file in the above directory
+# check the config file for additional parameter configuration
+# run the module snakefile
+snakemake -c 8 -s workflows/hmm_homology/Snakefile --configfile configs/config.yaml -np
+```
+
+
+Alternative, for reference purpose: network inference method.
 ```shell
 # cd to top working directory
 cd /Users/daffa/Documents/Work/jspp67_bioinf
@@ -23,9 +34,4 @@ snakemake -c 8 -s workflows/kegg_scraping/Snakefile --configfile configs/config.
 # build network objects
 snakemake -c 8 -s workflows/gene_network/Snakefile --configfile configs/config.yaml -np
 ```
-Alternative method: find previously annotated TAA-related genes. Requires 
-obtaining amino acid sequences from reviewing relevant literatures, then 
-save them in the `data/input` directory.
-```shell
 
-```
