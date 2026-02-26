@@ -9,7 +9,7 @@ Download & prepare the following from KEGG FTP:
     map (pathway to KO list)
 """
 
-configfile: "/Users/daffaaprilio/Documents/Work/jspp67_bioinf/configs/config-kegg_ftp.yaml"
+# configfile: "/Users/daffaaprilio/Documents/Work/jspp67_bioinf/configs/config-kegg_ftp.yaml"
 
 WDIR                = config['wdir']
 KEGG_USER           = config['user']

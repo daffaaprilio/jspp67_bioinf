@@ -1,6 +1,6 @@
 # workflows/hmm_homology/Snakefile
 
-configfile: "/Users/daffaaprilio/Documents/Work/jspp67_bioinf/configs/config.yaml"
+# configfile: "/Users/daffaaprilio/Documents/Work/jspp67_bioinf/configs/config.yaml"
 
 WDIR            = config['wdir']
 SEEDS           = {k: f"{WDIR}/{v}" for k, v in config['seeds'].items()}

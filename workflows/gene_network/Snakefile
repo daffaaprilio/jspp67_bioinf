@@ -1,6 +1,6 @@
 # workflows/gene_network/Snakefile
 
-configfile: "/Users/daffaaprilio/Documents/Work/jspp67_bioinf/configs/config.yaml"
+# configfile: "/Users/daffaaprilio/Documents/Work/jspp67_bioinf/configs/config.yaml"
 
 WDIR                = config['wdir']
 RESULTS_NET_DIR     = f"{WDIR}/{config['results_network_dir']}"
