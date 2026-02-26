@@ -1,5 +1,7 @@
 # workflows/hmm_homology/Snakefile
 
+## next update: streamline, cut down unnecessary steps (download accession, etc.)
+
 # configfile: "/Users/daffaaprilio/Documents/Work/jspp67_bioinf/configs/config.yaml"
 
 WDIR            = config['wdir']
@@ -8,6 +10,13 @@ DBS             = config['dbs']         # {name: blast_db_string}
 TARGET_FASTA    = f"{WDIR}/{config['target_fasta']}"
 RESULTS_DIR     = f"{WDIR}/{config['results_homology_dir']}"
 BLASTDB_DIR     = f"{WDIR}/{config['blastdb_dir']}"
+
+# Optional manual sequences: skip the BLAST pipeline by providing pre-downloaded FASTAs.
+# Keys must be "{seed}_{db}"; values are paths (relative paths resolved against WDIR).
+MANUAL_SEQS = {
+    k: (v if v.startswith("/") else f"{WDIR}/{v}")
+    for k, v in config.get('manual_seqs', {}).items()
+}
 
 '''
 A sensitive homology detection strategy:
@@ -71,6 +80,20 @@ rule blast_seed_gene:
             exit 1
         fi
         """
+
+
+# When manual_seqs is configured for a seed_db combination, this rule
+# copies the provided FASTA directly to *-03.faa, bypassing the BLAST pipeline.
+rule use_manual_fasta:
+    input:
+        fasta = lambda wc: MANUAL_SEQS[f"{wc.seed}_{wc.db}"]
+    output:
+        f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-03.faa"
+    shell:
+        "cp {input.fasta} {output}"
+
+# Prefer manual sequences over the BLAST-derived download when both rules apply.
+ruleorder: use_manual_fasta > download_sequences
 
 
 rule obtain_accessions:
