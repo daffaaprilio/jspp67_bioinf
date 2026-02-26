@@ -9,8 +9,9 @@ Download & prepare the following from KEGG FTP:
     map (pathway to KO list)
 """
 
-configfile: "../../configs/config-kegg_ftp.yaml"
+configfile: "/Users/daffaaprilio/Documents/Work/jspp67_bioinf/configs/config-kegg_ftp.yaml"
 
+WDIR                = config['wdir']
 KEGG_USER           = config['user']
 KEGG_PASS           = config['pass']
 # Define URLs for KEGG FTP downloads
@@ -22,9 +23,9 @@ ORGANISMS = config['organisms']
 
 rule all:
     input:
-        '../../data/reference/KEGG/ko.tar.gz',
-        expand('../../data/reference/KEGG/{organism}', organism=ORGANISMS),
-        '../../data/reference/KEGG/map.tar.gz'
+        f'{WDIR}/data/reference/KEGG/ko.tar.gz',
+        expand(f'{WDIR}/data/reference/KEGG/{{organism}}', organism=ORGANISMS),
+        f'{WDIR}/data/reference/KEGG/map.tar.gz'
 
 rule obtain_ko:
     params:
@@ -32,7 +33,7 @@ rule obtain_ko:
         password    = KEGG_PASS,
         url         = KO_URL
     output:
-        archive     = '../../data/reference/KEGG/ko.tar.gz'
+        archive     = f'{WDIR}/data/reference/KEGG/ko.tar.gz'
     shell:
         """
         wget --user {params.user} --password {params.password} -O {output.archive} {params.url}
@@ -44,7 +45,7 @@ rule obtain_kegg_sp:
         password    = KEGG_PASS,
         url         = lambda wc: f"{KEGG_SP_BASE_URL}{wc.organism}/"
     output:
-        outdir      = directory('../../data/reference/KEGG/{organism}'),
+        outdir      = directory(f'{WDIR}/data/reference/KEGG/{{organism}}'),
     shell:
         """
         mkdir -p {output.outdir}
@@ -62,7 +63,7 @@ rule obtain_map:
         password    = KEGG_PASS,
         url         = MAP_URL
     output:
-        archive     = '../../data/reference/KEGG/map.tar.gz'
+        archive     = f'{WDIR}/data/reference/KEGG/map.tar.gz'
     shell:
         """
         wget --user {params.user} --password {params.password} -O {output.archive} {params.url}

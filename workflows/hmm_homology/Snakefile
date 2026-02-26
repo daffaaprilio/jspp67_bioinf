@@ -1,6 +1,6 @@
 # workflows/hmm_homology/Snakefile
 
-configfile: "../../configs/config.yaml"
+configfile: "/Users/daffaaprilio/Documents/Work/jspp67_bioinf/configs/config.yaml"
 
 WDIR            = config['wdir']
 SEEDS           = {k: f"{WDIR}/{v}" for k, v in config['seeds'].items()}
@@ -157,7 +157,7 @@ rule obtain_gene2accession:
 
 rule convert_id:
     input:
-        script          = '../hmm_homology/scripts/convert_id.py',
+        script          = f'{WDIR}/workflows/hmm_homology/scripts/convert_id.py',
         gene2accession  = f'{WDIR}/data/reference/sorghum_gene2accession',
         hmm_result      = f'{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-06-results.tbl'
     output:

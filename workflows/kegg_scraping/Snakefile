@@ -2,11 +2,11 @@
 
 from pathlib import Path
 
-configfile: "../../configs/config.yaml"
+configfile: "/Users/daffaaprilio/Documents/Work/jspp67_bioinf/configs/config.yaml"
 
 WDIR                = config['wdir']
 SPECIES             = config['species'] # atted-plants: (sbi zma ... ath)
-PATHWAY             = config['pathways'] # map00020
+PATHWAYS            = config['pathways'].split() if isinstance(config['pathways'], str) else list(config['pathways']) # e.g. ["map00020", "map00660"]
 
 TARGET_FASTA        = f"{WDIR}/{config['target_fasta']}"
 KEGG_DIR            = f"{WDIR}/{config['reference_kegg_dir']}"
@@ -25,6 +25,23 @@ It is natural that the mentioned python script output more than one gene for
 one reaction. HMM homology will find the best fitting one (based on the result.tbl evalue info).
 """
 
+def get_pathway_gene_files(wildcards):
+    """Return per-pathway TSV paths after ensuring checkpoint kegg_pathway_genes has run."""
+    # trigger checkpoint dependency; PATHWAYS is already known from config so no glob needed
+    checkpoints.kegg_pathway_genes.get(**wildcards)
+    return [
+        f"{RESULTS_KEGG_DIR}/{SPECIES}_{pathway}_genes.tsv"
+        for pathway in PATHWAYS
+    ]
+
+def get_separated_by_ko_files(wildcards):
+    """Return per-pathway-ko TSV paths after ensuring checkpoint separate_by_function has run."""
+    checkpoints.separate_by_function.get(**wildcards)
+    return [
+        f"{RESULTS_KO_DIR}/{{seed}}_kegg/{{seed}}_kegg-01-pathway_genes_from_KEGG.txt"
+    ]
+
+
 def aggregate_final_outputs(wildcards):
     checkpoint_output = checkpoints.separate_by_function.get(**wildcards).output[0]
     # discover all KO IDs from the directory that the checkpoint created
@@ -39,41 +56,51 @@ rule all:
     input:
         aggregate_final_outputs
 
-rule kegg_pathway_genes:
+checkpoint kegg_pathway_genes:
+    """Run kegg_pathway_genes.py with all pathways in one call; outputs to RESULTS_KEGG_DIR."""
     input:
-        script  = 'scripts/kegg_pathway_genes.py',
+        script  = f'{WDIR}/workflows/kegg_scraping/scripts/kegg_pathway_genes.py',
     output:
-        f"{RESULTS_KEGG_DIR}/{SPECIES}_{PATHWAY}_genes.tsv"
+        directory(RESULTS_KEGG_DIR)
     params:
-        kegg_d  = KEGG_DIR,
-        pathway = PATHWAY,
-        sp      = SPECIES,
+        kegg_d   = KEGG_DIR,
+        pathways = " ".join(PATHWAYS),
+        sp       = SPECIES,
     shell:
         """
         python {input.script} \
-            --pathway {params.pathway} \
+            --pathways {params.pathways} \
             --species {params.sp} \
             --kegg-dir {params.kegg_d} \
             --output {output}
         """
 
 checkpoint separate_by_function:
+    """Split each per-pathway TSV (one per pathway from kegg_pathway_genes) by KO function."""
     input:  
-        pathway_gene_file   = f"{RESULTS_KEGG_DIR}/{SPECIES}_{PATHWAY}_genes.tsv", # pathway gene file (output from the kegg_pathway_genes.py script)
-        script              = 'scripts/separate_pathway_gene_files.py'
+        pathway_gene_files  = get_pathway_gene_files, 
+        script              = f'{WDIR}/workflows/kegg_scraping/scripts/separate_pathway_gene_files.py'
     output: 
         directory(RESULTS_KO_DIR)
-    params:
-        pathway     = PATHWAY
-    shell:
-        """
-        python {input.script} --input {input.pathway_gene_file} --output {output} --pathway {params.pathway}
-        """
+    run:
+        import os
+        os.makedirs(output[0], exist_ok=True)
+        for f in input.pathway_gene_files:
+            # extract pathway ID from filename: {SPECIES}_{pathway}_genes.tsv
+            stem    = Path(f).stem  # e.g. "atted-plants_map00020_genes"
+            pathway = stem[len(SPECIES) + 1 : -len("_genes")]
+            shell(
+                f"python {input.script} "
+                f"--input {f} "
+                f"--output {output[0]} "
+                f"--pathway {pathway}"
+            )
 
 rule obtain_spgeneid:
     input:
-        tsv    = f"{RESULTS_KO_DIR}/{{seed}}_kegg/{{seed}}_kegg-01-pathway_genes_from_KEGG.txt",
-        script = 'scripts/obtain_spgeneid.py'
+        # tsv    = f"{RESULTS_KO_DIR}/{{seed}}_kegg/{{seed}}_kegg-01-pathway_genes_from_KEGG.txt",
+        tsv     = get_separated_by_ko_files,
+        script  = f'{WDIR}/workflows/kegg_scraping/scripts/obtain_spgeneid.py'
     output:
         f"{RESULTS_KO_DIR}/{{seed}}_kegg/{{seed}}_kegg-02-spgeneid.txt"
     shell:
@@ -84,7 +111,7 @@ rule obtain_spgeneid:
 rule obtain_sequences:
     input:
         spgeneid = f"{RESULTS_KO_DIR}/{{seed}}_kegg/{{seed}}_kegg-02-spgeneid.txt",
-        script   = 'scripts/obtain_aa_sequences.py'
+        script   = f'{WDIR}/workflows/kegg_scraping/scripts/obtain_aa_sequences.py'
     output:
         f"{RESULTS_DIR}/{{seed}}_kegg/{{seed}}_kegg-03.faa"
     params:

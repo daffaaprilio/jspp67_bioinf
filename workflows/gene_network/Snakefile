@@ -1,6 +1,6 @@
 # workflows/gene_network/Snakefile
 
-configfile: "../../configs/config.yaml"
+configfile: "/Users/daffaaprilio/Documents/Work/jspp67_bioinf/configs/config.yaml"
 
 WDIR                = config['wdir']
 RESULTS_NET_DIR     = f"{WDIR}/{config['results_network_dir']}"
@@ -22,7 +22,7 @@ rule all:
 
 rule build_graph_object:
     input:
-        script  = "scripts/build_graph.py"
+        script  = f"{WDIR}/workflows/gene_network/scripts/build_graph.py"
     params:
         gene_no     = TOP_K_GENES,
         min_z       = MIN_Z,
@@ -36,7 +36,7 @@ rule build_graph_object:
     
 rule annotate_graph_object:
     input:
-        script      = "scripts/load_annotate_seed_genes.py",
+        script      = f"{WDIR}/workflows/gene_network/scripts/load_annotate_seed_genes.py",
         pickle      = f"{RESULTS_NET_DIR}/sbi_G-z{MIN_Z}_k{TOP_K_GENES}.pkl"
     params:
         pathways    = PATHWAYS

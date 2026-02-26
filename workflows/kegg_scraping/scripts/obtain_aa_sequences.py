@@ -4,6 +4,8 @@
 #
 # Usage:
 #   python obtain_aa_sequences.py --input {spgeneid_txt} --kegg-dir {kegg_dir} --output {out.faa}
+#   python workflows/kegg_scraping/scripts/obtain_aa_sequences.py --input results/by_ko/map00020-K00025_kegg/map00020-K00025_kegg-01-pathway_genes_from_KEGG.txt --kegg-dir data/reference/KEGG --output results/hmm_homology/map00020-K00025_kegg/map00020-K00025_kegg-03.faa
+#       
 
 import argparse
 from pathlib import Path

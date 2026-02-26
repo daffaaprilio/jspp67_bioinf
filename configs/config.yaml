@@ -1,6 +1,7 @@
 # configs/config.yaml
 
-wdir: "/Users/daffa/Documents/Work/jspp67_bioinf"
+# wdir: "/Users/daffa/Documents/Work/jspp67_bioinf" # MacStudio
+wdir: "/Users/daffaaprilio/Documents/Work/jspp67_bioinf" # MacBook
 
 # homology target
 target_fasta:             "data/reference/GCF_000003195.3_Sorghum_bicolor_NCBIv3_protein.faa"

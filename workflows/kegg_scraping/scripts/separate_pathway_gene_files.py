@@ -39,10 +39,12 @@ def save_outfile(sub_df, output_path):
     """
     Save a KO sub-DataFrame as a TSV file.
     Creates parent directories if they don't exist.
+    Drops the pathway column so output contains: species | gene | ncbi_geneid | ko | ncbi_proteinid
     """
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    sub_df.to_csv(output_path, sep='\t', index=False)
+    cols = [c for c in sub_df.columns if c != 'pathway']
+    sub_df[cols].to_csv(output_path, sep='\t', index=False)
     
 
 # ---------------------------------------------------------------------------
@@ -75,6 +77,8 @@ def main():
     output_prefix = args.output # prefix of the Output file name must be specified for the subsequent Snakemake 
 
     if Path(input).exists():
+        # ensure output directory exists before iterating (required for Snakemake directory() output)
+        Path(output_prefix).mkdir(parents=True, exist_ok=True)
         # main executor
         input_df = parse_input_file(input)
         for ko, sub_df in separate_by_orthology(input_df).items():
