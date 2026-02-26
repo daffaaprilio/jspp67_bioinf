@@ -31,30 +31,9 @@ rule all:
             db=DBS.keys(),
         )
 
-rule setup_blastdb:
-    output:
-        ok = touch(f"{BLASTDB_DIR}/download.ok")
-    params:
-        outdir = BLASTDB_DIR,
-        dbs    = " ".join(DBS.values())   # e.g. "nr refseq_protein"
-    shell:
-        """
-        mkdir -p {params.outdir}
-        cd {params.outdir}
-
-        # download taxonomy (needed for -entrez_query filtering)
-        update_blastdb.pl --decompress taxdb
-
-        # download each configured BLAST database
-        for db in {params.dbs}; do
-            update_blastdb.pl --decompress "$db"
-        done
-        """
-
 rule blast_seed_gene:
     input:
         fasta  = lambda wc: SEEDS[wc.seed],
-        db_ok  = f"{BLASTDB_DIR}/download.ok"
     params:
         db              = lambda wc: DBS[wc.db],
         blastdb_dir     = BLASTDB_DIR,
@@ -103,17 +82,15 @@ rule obtain_accessions:
         """
 
 
-rule download_sequences:
+rule obtain_sequences:
     input:  f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-02-accessions.txt"
     output: f"{RESULTS_DIR}/{{seed}}_{{db}}/{{seed}}_{{db}}-03.faa"
     shell:
         """
-        while read acc; do
-            if [ -n "$acc" ]; then
-                efetch -db protein -id "$acc" -format fasta >> {output}
-                sleep 0.1
-            fi
-        done < {input}
+        blastdbcmd \
+            -db {DBS[wc.db]} \
+            -entry_batch {input} \
+            -out {output}
         """
 
 
