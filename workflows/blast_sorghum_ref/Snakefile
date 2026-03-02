@@ -1,0 +1,67 @@
+# workflows/blast_sorghum_ref/Snakefile
+
+WDIR            = config['wdir']
+SEEDS           = {k: f"{WDIR}/{v}" for k, v in config['seeds'].items()}
+RESULTS_DIR     = f"{WDIR}/{config['results_basic_blastp_dir']}"
+BLASTDB_DIR     = f"{WDIR}/{config['blastdb_dir']}"
+BLASTDB_NAME    = 'sbiref'
+
+rule all:
+    input:
+        expand(
+            [
+                f"{RESULTS_DIR}/{{seed}}_{BLASTDB_NAME}/{{seed}}_{BLASTDB_NAME}-01-blast_hits.txt"
+            ],
+            seed=SEEDS.keys(),
+        )
+        
+
+
+rule makeblastdb:
+    input:
+        proteome        = f'{WDIR}/data/reference/GCF_000003195.3_Sorghum_bicolor_NCBIv3_protein.faa'
+    params:
+        dbname_prefix   = f'{BLASTDB_DIR}/{BLASTDB_NAME}',
+        dbtype          = 'prot'
+    output:
+        expand(f'{BLASTDB_DIR}/{BLASTDB_NAME}.{{ext}}', ext=['pdb', 'phr', 'pin', 'pjs', 'pot', 'psq', 'ptf', 'pto'])
+    shell:
+        """
+        makeblastdb -in {input.proteome} -out {params.dbname_prefix} -dbtype {params.dbtype}
+        """
+
+rule blast_seed_gene:
+    input:
+        fasta  = lambda wc: SEEDS[wc.seed],
+    params:
+        db              = f'{BLASTDB_NAME}',
+        blastdb_dir     = BLASTDB_DIR,
+        max_target_seqs = config['max_target_seqs'],
+        outfmt          = "6 qacc sacc pident length qcovs evalue bitscore staxids",
+    output:
+        archive = f"{RESULTS_DIR}/{{seed}}_{BLASTDB_NAME}/{{seed}}_{BLASTDB_NAME}-00-blast_archive.txt",
+        raw     = f"{RESULTS_DIR}/{{seed}}_{BLASTDB_NAME}/{{seed}}_{BLASTDB_NAME}-00-raw_blast_hits.txt",
+        tab     = f"{RESULTS_DIR}/{{seed}}_{BLASTDB_NAME}/{{seed}}_{BLASTDB_NAME}-01-blast_hits.txt"
+    shell:
+        """
+        # run archive blast against local database
+        blastp \
+            -db {params.blastdb_dir}/{params.db} \
+            -query {input.fasta} \
+            -max_target_seqs {params.max_target_seqs} \
+            -outfmt 11 > {output.archive} \
+
+        # parse tabular and human-readable blast output
+        blast_formatter \
+            -archive {output.archive} \
+            -outfmt "{params.outfmt}" > {output.tab}
+
+        blast_formatter \
+            -archive {output.archive} \
+            -outfmt 0 > {output.raw}
+
+        if [ ! -s {output.tab} ]; then
+            echo "ERROR: BLAST returned no hits for {wildcards.seed} vs {BLASTDB_NAME}." >&2
+            exit 1
+        fi
+        """
