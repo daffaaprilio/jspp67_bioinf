@@ -93,7 +93,7 @@ rule use_manual_fasta:
         "cp {input.fasta} {output}"
 
 # Prefer manual sequences over the BLAST-derived download when both rules apply.
-ruleorder: use_manual_fasta > download_sequences
+# ruleorder: use_manual_fasta > download_sequences
 
 
 rule obtain_accessions:

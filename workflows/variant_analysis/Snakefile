@@ -1,0 +1,122 @@
+# workflows/variant_analysis/Snakefile
+#
+# SNP / small-indel detection from ONT reads mapped to BTx623 using Clair3.
+#
+# Tool chain:
+#   samtools index  →  Clair3 (run_clair3.sh)  →  bcftools filter  →  bcftools merge
+#
+# Required conda/mamba packages (env: sbi):
+#   mamba install -n sbi -c conda-forge -c bioconda samtools clair3 bcftools -y
+#
+# Usage (standalone):
+#   snakemake -c 8 -s workflows/variant_analysis/Snakefile \
+#             --configfile configs/config.yaml
+#
+# Or via the root Snakefile (preferred):
+#   snakemake -c 8 --configfile configs/config.yaml variant_analysis_all
+
+WDIR        = config["wdir"]
+SAMPLES     = config["variant_samples"]
+BAM_DIR     = config["bam_dir"]
+REF         = f"{WDIR}/{config['reference']}"
+CLAIR3_PATH  = config["clair3_path"]
+CLAIR3_MODEL = config["clair3_model"]
+MIN_QUAL    = config.get("variant_min_qual",  20)
+MIN_DEPTH   = config.get("variant_min_depth",  5)
+THREADS     = config.get("threads", 8)
+RESULTS_DIR = f"{WDIR}/{config['results_variant_dir']}"
+
+
+# ── Targets ───────────────────────────────────────────────────────────────────
+
+rule all:
+    input:
+        expand(f"{RESULTS_DIR}/{{sample}}/{{sample}}_filtered.vcf.gz", sample=SAMPLES),
+        f"{RESULTS_DIR}/all_strains_merged.vcf.gz",
+
+
+# ── Step 1: index pre-aligned BAMs ───────────────────────────────────────────
+
+rule index_bam:
+    """Index a BAM if .bai is absent or stale."""
+    input:
+        bam = f"{BAM_DIR}/read_{{sample}}.bam",
+    output:
+        bai = f"{BAM_DIR}/read_{{sample}}.bam.bai",
+    threads: 1
+    shell:
+        "samtools index -@ {threads} {input.bam}"
+
+
+# ── Step 2: call variants with Clair3 (ONT) ──────────────────────────────────
+
+rule call_variants:
+    """Run Clair3 per sample; outputs merge_output.vcf.gz in a per-sample dir."""
+    input:
+        bam = f"{BAM_DIR}/read_{{sample}}.bam",
+        bai = f"{BAM_DIR}/read_{{sample}}.bam.bai",
+        ref = REF,
+    output:
+        vcf = f"{RESULTS_DIR}/{{sample}}/merge_output.vcf.gz",
+    params:
+        outdir     = f"{RESULTS_DIR}/{{sample}}",
+        model      = CLAIR3_MODEL,
+        clair3_bin = f"{CLAIR3_PATH}/run_clair3.sh",
+    threads: THREADS
+    shell:
+        """
+        set -euo pipefail
+        mkdir -p {params.outdir}
+        {params.clair3_bin} \
+            --bam_fn={input.bam} \
+            --ref_fn={input.ref} \
+            --threads={threads} \
+            --platform=ont \
+            --model_path={params.model} \
+            --output={params.outdir} \
+            --sample_name={wildcards.sample} \
+            --include_all_ctgs
+        """
+
+
+# ── Step 3: hard-filter VCF ───────────────────────────────────────────────────
+
+rule filter_vcf:
+    """Remove low-quality calls (QUAL < {MIN_QUAL} or DP < {MIN_DEPTH})."""
+    input:
+        vcf = f"{RESULTS_DIR}/{{sample}}/merge_output.vcf.gz",
+    output:
+        vcf = f"{RESULTS_DIR}/{{sample}}/{{sample}}_filtered.vcf.gz",
+        tbi = f"{RESULTS_DIR}/{{sample}}/{{sample}}_filtered.vcf.gz.tbi",
+    params:
+        min_qual  = MIN_QUAL,
+        min_depth = MIN_DEPTH,
+    shell:
+        """
+        set -euo pipefail
+        bcftools filter \
+            -e 'QUAL<{params.min_qual} || FORMAT/DP<{params.min_depth}' \
+            {input.vcf} \
+        | bcftools view -f PASS -O z -o {output.vcf}
+        bcftools index --tbi {output.vcf}
+        """
+
+
+# ── Step 4: merge all samples into one multi-sample VCF ──────────────────────
+
+rule merge_vcf:
+    """Merge per-sample filtered VCFs into a single multi-sample VCF."""
+    input:
+        vcfs = expand(
+            f"{RESULTS_DIR}/{{sample}}/{{sample}}_filtered.vcf.gz",
+            sample=SAMPLES,
+        ),
+    output:
+        vcf = f"{RESULTS_DIR}/all_strains_merged.vcf.gz",
+        tbi = f"{RESULTS_DIR}/all_strains_merged.vcf.gz.tbi",
+    shell:
+        """
+        set -euo pipefail
+        bcftools merge {input.vcfs} -O z -o {output.vcf}
+        bcftools index --tbi {output.vcf}
+        """

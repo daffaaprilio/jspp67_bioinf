@@ -1,0 +1,140 @@
+# workflows/dmr_analysis/Snakefile
+#
+# Differentially Methylated Region (DMR) analysis from ONT native methylation
+# data (dorado duplex with 4mC_5mC / 6mA modification tags; MM/ML tags in BAM).
+#
+# Tool chain:
+#   modkit pileup  →  bedmethyl_to_dss.py  →  dss_dmr.R (DSS)
+#
+# Required conda/mamba packages (env: sbi):
+#   mamba install -n sbi -c conda-forge -c bioconda modkit samtools -y
+#   Rscript -e "install.packages('BiocManager'); BiocManager::install('DSS')"
+#
+# Usage (standalone):
+#   snakemake -c 8 -s workflows/dmr_analysis/Snakefile \
+#             --configfile configs/config.yaml
+#
+# Or via the root Snakefile (preferred):
+#   snakemake -c 8 --configfile configs/config.yaml dmr_analysis_all
+#
+# Notes on adding more samples:
+#   1. Drop new BAMs into dmr_bam_dir ({sample}.bam)
+#   2. Add the sample name to dmr_samples in configs/config.yaml
+#   3. Add pairwise entries to dmr_comparisons in configs/config.yaml
+
+import os
+
+WDIR         = config["wdir"]
+SAMPLES      = config["dmr_samples"]
+BAM_DIR      = config["dmr_bam_dir"]
+REF          = f"{WDIR}/{config['reference']}"
+PRESET       = config.get("modkit_preset", "traditional")
+COMPARISONS  = config.get("dmr_comparisons", [])   # list of {name, sample_a, sample_b}
+THREADS      = config.get("threads", 8)
+RESULTS_DIR  = f"{WDIR}/{config['results_dmr_dir']}"
+
+SCRIPTS_DIR  = os.path.join(os.path.dirname(workflow.snakefile), "scripts")
+
+# Build a lookup: comparison_name → {sample_a, sample_b}
+COMP_LOOKUP  = {c["name"]: c for c in COMPARISONS}
+
+# DSS parameters
+DSS_DELTA      = config.get("dss_delta",       0.1)
+DSS_P_THRESH   = config.get("dss_p_threshold", 0.05)
+DSS_MIN_CPG    = config.get("dss_min_cpg",     3)
+DSS_MIN_LEN    = config.get("dss_min_len",     50)
+
+
+# ── Targets ───────────────────────────────────────────────────────────────────
+
+rule all:
+    input:
+        # Per-sample methylation pileup (runs with ≥1 sample)
+        expand(
+            f"{RESULTS_DIR}/{{sample}}/{{sample}}_CpG.bedMethyl",
+            sample=SAMPLES,
+        ),
+        # Per-comparison DMR results (only when dmr_comparisons is populated)
+        *([
+            f"{RESULTS_DIR}/{comp['name']}/dmr_results.tsv"
+            for comp in COMPARISONS
+        ]),
+
+
+# ── Step 1: per-sample methylation pileup with modkit ────────────────────────
+
+rule extract_methylation:
+    """
+    modkit pileup produces a bedMethyl (bed9+) file with per-CpG methylation
+    counts (N_valid_cov, N_mod) directly from MM/ML ONT tags.
+    """
+    input:
+        bam = f"{BAM_DIR}/{{sample}}.bam",
+        ref = REF,
+    output:
+        bed = f"{RESULTS_DIR}/{{sample}}/{{sample}}_CpG.bedMethyl",
+    params:
+        preset = PRESET,
+    threads: THREADS
+    shell:
+        """
+        set -euo pipefail
+        mkdir -p $(dirname {output.bed})
+        modkit pileup \
+            {input.bam} {output.bed} \
+            --ref {input.ref} \
+            --preset {params.preset} \
+            --ignore h \
+            --threads {threads}
+        """
+
+
+# ── Step 2: reformat bedMethyl → DSS-compatible TSV ─────────────────────────
+
+rule bedmethyl_to_dss:
+    """
+    Convert modkit bedMethyl to DSS input format:
+    columns: chr  pos  N (coverage)  X (methylated count)
+    """
+    input:
+        bed = f"{RESULTS_DIR}/{{sample}}/{{sample}}_CpG.bedMethyl",
+    output:
+        dss = f"{RESULTS_DIR}/{{sample}}/{{sample}}_CpG.dss.tsv",
+    shell:
+        """
+        python {SCRIPTS_DIR}/bedmethyl_to_dss.py {input.bed} {output.dss}
+        """
+
+
+# ── Step 3: call DMRs with DSS (one rule per comparison) ─────────────────────
+
+rule call_dmr:
+    """
+    Run DSS DMLtest + callDMR for one pairwise comparison.
+    Requires at least 2 samples; activate by populating dmr_comparisons
+    in configs/config.yaml.
+    """
+    input:
+        dss_a = lambda wc: f"{RESULTS_DIR}/{COMP_LOOKUP[wc.comparison]['sample_a']}/{COMP_LOOKUP[wc.comparison]['sample_a']}_CpG.dss.tsv",
+        dss_b = lambda wc: f"{RESULTS_DIR}/{COMP_LOOKUP[wc.comparison]['sample_b']}/{COMP_LOOKUP[wc.comparison]['sample_b']}_CpG.dss.tsv",
+    output:
+        tsv = f"{RESULTS_DIR}/{{comparison}}/dmr_results.tsv",
+    params:
+        delta     = DSS_DELTA,
+        p_thresh  = DSS_P_THRESH,
+        min_cpg   = DSS_MIN_CPG,
+        min_len   = DSS_MIN_LEN,
+    shell:
+        """
+        set -euo pipefail
+        mkdir -p $(dirname {output.tsv})
+        Rscript {SCRIPTS_DIR}/dss_dmr.R \
+            --sample_a {input.dss_a} \
+            --sample_b {input.dss_b} \
+            --comparison {wildcards.comparison} \
+            --delta {params.delta} \
+            --p_threshold {params.p_thresh} \
+            --min_cpg {params.min_cpg} \
+            --min_len {params.min_len} \
+            --output {output.tsv}
+        """
