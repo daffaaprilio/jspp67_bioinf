@@ -82,9 +82,13 @@ bs_b <- make_bs(dat_b, basename(opt$sample_b))
 
 # ── DML test (no replication — use smoothing) ─────────────────────────────────
 
+bs_combined <- BiocGenerics::combine(bs_a, bs_b)
+
 message("[dss_dmr] Running DMLtest …")
 dml_result <- DMLtest(
-  bs_a, bs_b,
+  bs_combined,
+  group1              = 1,
+  group2              = 2,
   smoothing           = TRUE,
   smoothing.span      = 500,
   equal.disp          = FALSE
