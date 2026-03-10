@@ -193,6 +193,8 @@ def section1(results_dir, available, ref_fasta, out_dir, sample_order):
     plt.tight_layout()
     out = out_dir / 'fig1_avg_methylation_by_context.pdf'
     plt.savefig(out, bbox_inches='tight')
+    svg_out = out_dir / 'fig1_avg_methylation_by_context.svg'
+    plt.savefig(svg_out, bbox_inches='tight')
     plt.close()
     log.info(f'  Saved: {out}')
 
@@ -325,6 +327,8 @@ def section2(results_dir, available, ref_gff, out_dir, tmpdir, sample_order,
     plt.tight_layout()
     out = out_dir / 'fig2_methylation_by_feature.pdf'
     plt.savefig(out, bbox_inches='tight')
+    svg_out = out_dir / 'fig2_methylation_by_feature.svg'
+    plt.savefig(svg_out, bbox_inches='tight')
     plt.close()
     log.info(f'  Saved: {out}')
 
@@ -390,6 +394,8 @@ def section3(results_dir, available, out_dir, min_cov=5, top_n_sites=50_000):
     plt.tight_layout()
     out = out_dir / 'fig3a_pca.pdf'
     plt.savefig(out, bbox_inches='tight')
+    svg_out = out_dir / 'fig3a_pca.svg'
+    plt.savefig(svg_out, bbox_inches='tight')
     plt.close()
     log.info(f'  Saved: {out}')
 
@@ -417,6 +423,8 @@ def section3(results_dir, available, out_dir, min_cov=5, top_n_sites=50_000):
     )
     out = out_dir / 'fig3b_clustermap.pdf'
     plt.savefig(out, bbox_inches='tight')
+    svg_out = out_dir / 'fig3b_clustermap.svg'
+    plt.savefig(svg_out, bbox_inches='tight')
     plt.close()
     log.info(f'  Saved: {out}')
 
@@ -468,6 +476,8 @@ def section4(allC_data, allC_ctx, out_dir, sample_order):
     plt.tight_layout()
     out = out_dir / 'fig4a_coverage_distribution.pdf'
     plt.savefig(out, bbox_inches='tight')
+    svg_out = out_dir / 'fig4a_coverage_distribution.svg'
+    plt.savefig(svg_out, bbox_inches='tight')
     plt.close()
     log.info(f'  Saved: {out}')
 
@@ -500,6 +510,8 @@ def section4(allC_data, allC_ctx, out_dir, sample_order):
     plt.tight_layout()
     out = out_dir / 'fig4b_methylation_distribution.pdf'
     plt.savefig(out, bbox_inches='tight')
+    svg_out = out_dir / 'fig4b_methylation_distribution.svg'
+    plt.savefig(svg_out, bbox_inches='tight')
     plt.close()
     log.info(f'  Saved: {out}')
 
@@ -522,6 +534,8 @@ def section4(allC_data, allC_ctx, out_dir, sample_order):
     plt.tight_layout()
     out = out_dir / 'fig4c_methylation_vs_coverage_hexbin.pdf'
     plt.savefig(out, bbox_inches='tight')
+    svg_out = out_dir / 'fig4c_methylation_vs_coverage_hexbin.svg'
+    plt.savefig(svg_out, bbox_inches='tight')
     plt.close()
     log.info(f'  Saved: {out}')
 

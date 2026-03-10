@@ -40,6 +40,13 @@ FIGURES = [
     f"{OUT_DIR}/fig4a_coverage_distribution.pdf",
     f"{OUT_DIR}/fig4b_methylation_distribution.pdf",
     f"{OUT_DIR}/fig4c_methylation_vs_coverage_hexbin.pdf",
+    f"{OUT_DIR}/fig1_avg_methylation_by_context.svg",
+    f"{OUT_DIR}/fig2_methylation_by_feature.svg",
+    f"{OUT_DIR}/fig3a_pca.svg",
+    f"{OUT_DIR}/fig3b_clustermap.svg",
+    f"{OUT_DIR}/fig4a_coverage_distribution.svg",
+    f"{OUT_DIR}/fig4b_methylation_distribution.svg",
+    f"{OUT_DIR}/fig4c_methylation_vs_coverage_hexbin.svg",
 ]
 
 rule all:
@@ -77,6 +84,13 @@ rule methylation_eda:
         fig4a = f"{OUT_DIR}/fig4a_coverage_distribution.pdf",
         fig4b = f"{OUT_DIR}/fig4b_methylation_distribution.pdf",
         fig4c = f"{OUT_DIR}/fig4c_methylation_vs_coverage_hexbin.pdf",
+        svg_fig1  = f"{OUT_DIR}/fig1_avg_methylation_by_context.svg",
+        svg_fig2  = f"{OUT_DIR}/fig2_methylation_by_feature.svg",
+        svg_fig3a = f"{OUT_DIR}/fig3a_pca.svg",
+        svg_fig3b = f"{OUT_DIR}/fig3b_clustermap.svg",
+        svg_fig4a = f"{OUT_DIR}/fig4a_coverage_distribution.svg",
+        svg_fig4b = f"{OUT_DIR}/fig4b_methylation_distribution.svg",
+        svg_fig4c = f"{OUT_DIR}/fig4c_methylation_vs_coverage_hexbin.svg",
     log:
         f"{OUT_DIR}/run_eda.log",
     threads: 1
