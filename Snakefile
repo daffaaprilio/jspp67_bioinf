@@ -26,6 +26,13 @@ module dmr_analysis:
 use rule * from dmr_analysis as dmr_analysis_*
 
 
+module methylation_landscape:
+    snakefile: "workflows/methylation_landscape/Snakefile"
+    config: config
+
+use rule * from methylation_landscape as methylation_landscape_*
+
+
 # ── Default target ────────────────────────────────────────────────────────────
 
 rule all:
@@ -33,3 +40,4 @@ rule all:
         rules.hmm_homology_all.input,
         rules.variant_analysis_all.input,
         rules.dmr_analysis_all.input,
+        rules.methylation_landscape_all.input,
