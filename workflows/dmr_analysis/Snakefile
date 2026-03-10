@@ -28,37 +28,56 @@ WDIR         = config["wdir"]
 SAMPLES      = config["dmr_samples"]
 BAM_DIR      = config["dmr_bam_dir"]
 REF          = f"{WDIR}/{config['reference']}"
-PRESET       = config.get("modkit_preset", "traditional")
+CONTEXTS     = config.get("dmr_contexts",     ["CpG"])   # list of methylation contexts to run
+REGIONS      = config.get("dmr_gene_regions", ["gene"])  # list of gene region types to run
 COMPARISONS  = config.get("dmr_comparisons", [])   # list of {name, sample_a, sample_b}
 THREADS      = config.get("threads", 8)
 RESULTS_DIR  = f"{WDIR}/{config['results_dmr_dir']}"
+ANNOT_GFF    = f"{WDIR}/{config['annotation_gff']}"
 
 SCRIPTS_DIR  = os.path.join(os.path.dirname(workflow.snakefile), "scripts")
 
 # Build a lookup: comparison_name → {sample_a, sample_b}
 COMP_LOOKUP  = {c["name"]: c for c in COMPARISONS}
 
-# DSS parameters
-DSS_DELTA      = config.get("dss_delta",       0.1)
-DSS_P_THRESH   = config.get("dss_p_threshold", 0.05)
-DSS_MIN_CPG    = config.get("dss_min_cpg",     3)
-DSS_MIN_LEN    = config.get("dss_min_len",     50)
+# modkit pileup flags per context
+# CpG:  restrict to CpG dinucleotides and collapse +/- strands
+# allC: no context filter — captures CpG, CHG, and CHH (strands kept separate)
+MODKIT_FLAGS = {
+    "CpG":  "--cpg --combine-strands",
+    "allC": "",
+}
+
+# DSS parameter presets
+DSS_PRESETS    = config.get("dss_presets", {})
+PRESET_IDS     = list(DSS_PRESETS.keys())
 
 
 # ── Targets ───────────────────────────────────────────────────────────────────
 
 rule all:
     input:
-        # Per-sample methylation pileup (runs with ≥1 sample)
+        # Per-sample pileup for every context (runs with ≥1 sample)
         expand(
-            f"{RESULTS_DIR}/{{sample}}/{{sample}}_CpG.bedMethyl",
+            f"{RESULTS_DIR}/{{context}}/{{sample}}/{{sample}}.bedMethyl",
+            context=CONTEXTS,
             sample=SAMPLES,
         ),
-        # Per-comparison DMR results (only when dmr_comparisons is populated)
-        *([
-            f"{RESULTS_DIR}/{comp['name']}/dmr_results.tsv"
-            for comp in COMPARISONS
-        ]),
+        # Per-comparison DMR calls for every context × preset
+        *(expand(
+            f"{RESULTS_DIR}/{{context}}/{{comparison}}/dmr_results_{{preset}}.tsv",
+            context=CONTEXTS,
+            comparison=[c["name"] for c in COMPARISONS],
+            preset=PRESET_IDS,
+        ) if COMPARISONS else []),
+        # Per-comparison gene lists for every context × region × preset
+        *(expand(
+            f"{RESULTS_DIR}/{{context}}/{{comparison}}/dmr_genes_{{region}}_{{preset}}.tsv",
+            context=CONTEXTS,
+            comparison=[c["name"] for c in COMPARISONS],
+            region=REGIONS,
+            preset=PRESET_IDS,
+        ) if COMPARISONS else []),
 
 
 # ── Step 1: per-sample methylation pileup with modkit ────────────────────────
@@ -87,15 +106,18 @@ rule align_methylation_bam:
 
 rule extract_methylation:
     """
-    modkit pileup produces a bedMethyl (bed9+) file with per-CpG methylation
+    modkit pileup produces a bedMethyl (bed9+) file with per-cytosine methylation
     counts (N_valid_cov, N_mod) directly from MM/ML ONT tags.
+    Context is controlled by the {context} wildcard (see MODKIT_FLAGS).
     """
     input:
         bam = f"{BAM_DIR}/{{sample}}.aligned.bam",
         bai = f"{BAM_DIR}/{{sample}}.aligned.bam.bai",
         ref = REF,
     output:
-        bed = f"{RESULTS_DIR}/{{sample}}/{{sample}}_CpG.bedMethyl",
+        bed = f"{RESULTS_DIR}/{{context}}/{{sample}}/{{sample}}.bedMethyl",
+    params:
+        flags = lambda wc: MODKIT_FLAGS[wc.context],
     threads: THREADS
     shell:
         """
@@ -104,9 +126,8 @@ rule extract_methylation:
         modkit pileup \
             {input.bam} {output.bed} \
             --reference {input.ref} \
-            --cpg \
-            --combine-strands \
-            --modified-bases '5mC' \
+            {params.flags} \
+            --modified-bases 5mC \
             --threads {threads}
         """
 
@@ -119,9 +140,9 @@ rule bedmethyl_to_dss:
     columns: chr  pos  N (coverage)  X (methylated count)
     """
     input:
-        bed = f"{RESULTS_DIR}/{{sample}}/{{sample}}_CpG.bedMethyl",
+        bed = f"{RESULTS_DIR}/{{context}}/{{sample}}/{{sample}}.bedMethyl",
     output:
-        dss = f"{RESULTS_DIR}/{{sample}}/{{sample}}_CpG.dss.tsv",
+        dss = f"{RESULTS_DIR}/{{context}}/{{sample}}/{{sample}}.dss.tsv",
     shell:
         """
         python {SCRIPTS_DIR}/bedmethyl_to_dss.py {input.bed} {output.dss}
@@ -137,17 +158,18 @@ rule call_dmr:
     in configs/config.yaml.
     """
     input:
-        dss_a = lambda wc: f"{RESULTS_DIR}/{COMP_LOOKUP[wc.comparison]['sample_a']}/{COMP_LOOKUP[wc.comparison]['sample_a']}_CpG.dss.tsv",
-        dss_b = lambda wc: f"{RESULTS_DIR}/{COMP_LOOKUP[wc.comparison]['sample_b']}/{COMP_LOOKUP[wc.comparison]['sample_b']}_CpG.dss.tsv",
+        dss_a = lambda wc: f"{RESULTS_DIR}/{wc.context}/{COMP_LOOKUP[wc.comparison]['sample_a']}/{COMP_LOOKUP[wc.comparison]['sample_a']}.dss.tsv",
+        dss_b = lambda wc: f"{RESULTS_DIR}/{wc.context}/{COMP_LOOKUP[wc.comparison]['sample_b']}/{COMP_LOOKUP[wc.comparison]['sample_b']}.dss.tsv",
     log:
-        f"{RESULTS_DIR}/{{comparison}}/dmr.log",
+        f"{RESULTS_DIR}/{{context}}/{{comparison}}/dmr_{{preset}}.log",
     output:
-        tsv = f"{RESULTS_DIR}/{{comparison}}/dmr_results.tsv",
+        tsv = f"{RESULTS_DIR}/{{context}}/{{comparison}}/dmr_results_{{preset}}.tsv",
     params:
-        delta     = DSS_DELTA,
-        p_thresh  = DSS_P_THRESH,
-        min_cpg   = DSS_MIN_CPG,
-        min_len   = DSS_MIN_LEN,
+        delta     = lambda wc: DSS_PRESETS[wc.preset]["delta"],
+        p_thresh  = lambda wc: DSS_PRESETS[wc.preset]["p_threshold"],
+        min_cpg   = lambda wc: DSS_PRESETS[wc.preset]["min_cpg"],
+        min_len   = lambda wc: DSS_PRESETS[wc.preset]["min_len"],
+    threads: THREADS   # serialise DSS jobs — one at a time to avoid OOM
     shell:
         """
         set -euo pipefail
@@ -161,4 +183,57 @@ rule call_dmr:
             --min_cpg {params.min_cpg} \
             --min_len {params.min_len} \
             --output {output.tsv} > {log} 2>&1
+        """
+
+# ── Step 4: intersect DMRs with gene annotation ──────────────────────────────
+
+rule dmr_to_genes:
+    """
+    Intersect DMR BED regions with the reference GFF3 gene features using
+    bedtools intersect.  Outputs a two-column TSV (gene_id, gene_name) for
+    every gene that overlaps at least one DMR.
+    region wildcard: "gene" uses the full annotated gene body;
+    "promoter_N" restricts to N bp upstream of the TSS (strand-aware).
+    """
+    input:
+        dmr = f"{RESULTS_DIR}/{{context}}/{{comparison}}/dmr_results_{{preset}}.tsv",
+        gff = ANNOT_GFF,
+    output:
+        tsv = f"{RESULTS_DIR}/{{context}}/{{comparison}}/dmr_genes_{{region}}_{{preset}}.tsv",
+    params:
+        is_promoter = lambda wc: 1 if wc.region.startswith("promoter") else 0,
+        upstream    = lambda wc: int(wc.region.split("_")[1]) if wc.region.startswith("promoter") else 0,
+    shell:
+        r"""
+        set -euo pipefail
+
+        # Convert DSS DMR TSV (chr, start, end, …) to BED3, skip header
+        tail -n +2 {input.dmr} \
+            | awk 'NF>=3 {{print $1"\t"$2"\t"$3}}' \
+            > {output.tsv}.dmr.bed
+
+        # Extract gene features; for promoter_N rewrite coords to the upstream window
+        grep $'\tgene\t' {input.gff} \
+            | awk -v is_prom={params.is_promoter} -v up={params.upstream} \
+                'BEGIN{{FS="\t"; OFS="\t"}} {{
+                    if (is_prom) {{
+                        gs = $4; ge = $5; str = $7
+                        if (str == "+") {{ $4 = (gs - up > 1 ? gs - up : 1); $5 = gs - 1 }}
+                        else            {{ $4 = ge + 1; $5 = ge + up }}
+                    }}
+                    print
+                }}' \
+            | bedtools intersect -a stdin -b {output.tsv}.dmr.bed -u \
+            | awk '{{
+                gene_id = ""
+                n = split($9, attrs, ";")
+                for (i=1; i<=n; i++) {{
+                    if (attrs[i] ~ /^Dbxref=GeneID:/)  {{ sub(/^Dbxref=GeneID:/, "", attrs[i]); gene_id   = attrs[i] }}
+                }}
+                if (gene_id != "") print gene_id
+            }}' \
+            | sort -u \
+            > {output.tsv}
+
+        rm -f {output.tsv}.dmr.bed
         """
