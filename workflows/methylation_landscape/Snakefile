@@ -1,0 +1,100 @@
+# workflows/methylation_landscape/Snakefile
+#
+# Methylation landscape EDA — runs run_eda.py on the bedMethyl output from
+# the dmr_analysis pipeline and produces 7 PDF figures.
+#
+# Depends on:  results/dmr_analysis/{context}/{sample}/{sample}.bedMethyl
+#              (produced by the dmr_analysis extract_methylation rule)
+#
+# Usage (standalone, from project root):
+#   snakemake -c 1 -s workflows/methylation_landscape/Snakefile \
+#             --configfile configs/config.yaml
+#
+# Or via the root Snakefile (preferred — runs after dmr_analysis pileup):
+#   snakemake -c 8 --configfile configs/config.yaml methylation_landscape_all
+
+import os
+
+WDIR        = config["wdir"]
+SAMPLES     = config["dmr_samples"]
+CONTEXTS    = config.get("dmr_contexts", ["CpG", "allC"])
+REF_FASTA   = f"{WDIR}/{config['reference']}"
+REF_GFF     = f"{WDIR}/{config['annotation_gff']}"
+RESULTS_DIR = f"{WDIR}/{config['results_dmr_dir']}"
+OUT_DIR     = f"{WDIR}/results/methylation_landscape"
+MIN_COV     = config.get("mland_min_cov",    5)
+TOP_N       = config.get("mland_top_n",      50_000)
+PROMO_BP    = config.get("mland_promoter_bp", 2000)
+THREADS     = config.get("threads", 1)
+
+SCRIPT = os.path.join(os.path.dirname(workflow.snakefile), "run_eda.py")
+
+
+# ── Targets ───────────────────────────────────────────────────────────────────
+
+FIGURES = [
+    f"{OUT_DIR}/fig1_avg_methylation_by_context.pdf",
+    f"{OUT_DIR}/fig2_methylation_by_feature.pdf",
+    f"{OUT_DIR}/fig3a_pca.pdf",
+    f"{OUT_DIR}/fig3b_clustermap.pdf",
+    f"{OUT_DIR}/fig4a_coverage_distribution.pdf",
+    f"{OUT_DIR}/fig4b_methylation_distribution.pdf",
+    f"{OUT_DIR}/fig4c_methylation_vs_coverage_hexbin.pdf",
+]
+
+rule all:
+    input: FIGURES
+
+
+# ── EDA rule ──────────────────────────────────────────────────────────────────
+
+rule methylation_eda:
+    """
+    Run the methylation landscape EDA script on all available bedMethyl files.
+    All four sections (context averages, genomic features, PCA, coverage QC)
+    are executed in a single Python process; figures are written as PDFs.
+
+    The rule lists all expected bedMethyl files as inputs so Snakemake will
+    trigger dmr_analysis extract_methylation first when run from the root
+    Snakefile.  Missing files (pipeline not yet complete for a sample) are
+    handled gracefully by run_eda.py — they appear in the data-availability
+    log and the corresponding sample is skipped in each section.
+    """
+    input:
+        bedmethyl = expand(
+            f"{RESULTS_DIR}/{{context}}/{{sample}}/{{sample}}.bedMethyl",
+            context=CONTEXTS,
+            sample=SAMPLES,
+        ),
+        ref_fasta = REF_FASTA,
+        ref_gff   = REF_GFF,
+        script    = SCRIPT,
+    output:
+        fig1  = f"{OUT_DIR}/fig1_avg_methylation_by_context.pdf",
+        fig2  = f"{OUT_DIR}/fig2_methylation_by_feature.pdf",
+        fig3a = f"{OUT_DIR}/fig3a_pca.pdf",
+        fig3b = f"{OUT_DIR}/fig3b_clustermap.pdf",
+        fig4a = f"{OUT_DIR}/fig4a_coverage_distribution.pdf",
+        fig4b = f"{OUT_DIR}/fig4b_methylation_distribution.pdf",
+        fig4c = f"{OUT_DIR}/fig4c_methylation_vs_coverage_hexbin.pdf",
+    log:
+        f"{OUT_DIR}/run_eda.log",
+    threads: 1
+    params:
+        samples  = ' '.join(SAMPLES),
+        contexts = ' '.join(CONTEXTS),
+    shell:
+        """
+        python {input.script} \
+            --wdir          {WDIR} \
+            --ref-fasta     {input.ref_fasta} \
+            --ref-gff       {input.ref_gff} \
+            --results-dir   {RESULTS_DIR} \
+            --out-dir       {OUT_DIR} \
+            --samples       {params.samples} \
+            --contexts      {params.contexts} \
+            --min-cov       {MIN_COV} \
+            --top-n-sites   {TOP_N} \
+            --promoter-bp   {PROMO_BP} \
+        &> {log}
+        """
